@@ -1,22 +1,19 @@
 package com.projeto.gertecserver;
-
-import static androidx.core.content.ContextCompat.getSystemService;
-
-import android.content.Context;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbManager;
 import android.util.Log;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.json.JSONObject;
+
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
+import java.net.Socket;
 
 public class MyWebSocketServer extends WebSocketServer {
     private final WebSocketService context;
-    public MyWebSocketServer(int port, WebSocketService context) {
+    private CliSiTef clisitef;
+    public MyWebSocketServer(int port, WebSocketService context){
         super(new InetSocketAddress(port));
         this.context = context;
     }
@@ -40,11 +37,13 @@ public class MyWebSocketServer extends WebSocketServer {
             }
 
             if("CliSiTef".equals(activity)){
-                CliSiTef cliSiTef = new CliSiTef(context);
-                String resposta = cliSiTef.transaction(json);
-                conn.send(resposta);
+                clisitef = new CliSiTef(context,conn);
+                clisitef.transaction(json);
             }
 
+            if("continueTransaction".equals(activity)){
+                clisitef.continueTransaction(2, json.getString("return"));
+            }
         } catch(Exception e){
             conn.send("{\"status\":\"erro\",\"mensagem\":\"JSON inválido ou erro interno\"}");
             e.printStackTrace();
@@ -62,8 +61,6 @@ public class MyWebSocketServer extends WebSocketServer {
     }
 
     @Override
-    public void onStart() {
-
-    }
+    public void onStart(){}
 }
 

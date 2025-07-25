@@ -1,21 +1,15 @@
 [CliSiTef]
-; Nao esquecer de habilitar no AndroidManifest.xml:
-; <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-; a partir da versao 4.0.106.41, "/sdcard" passa a ser o valor padr�o para DiretorioTrace
-; DiretorioTrace=/sdcard
-HabilitaTrace=1
+HabilitaTrace=0
 
 [CliSiTefI]
-DiretorioTrace=/sdcard
-HabilitaTrace=1
+HabilitaTrace=0
 
 [PinPad]
-; Validade de 14/11/2018 a 14/12/2018
-ChaveTrace=8A32E7B44B5673A6
-HabilitaTrace=1
-NivelTrace=5
-HabilitaTraceStatusPinPad=1
-MensagemPadrao=CliSiTef|Android example
+HabilitaTrace=0
+HabilitaTraceStatusPinPad=0
+MensagemPadrao=Deeliv Software Ltda
 
-[TabTraducao]
-NomeArqTraducao=Mens.txt
+[Geral]
+
+[SiTef]
+MantemConexaoAtiva=1
