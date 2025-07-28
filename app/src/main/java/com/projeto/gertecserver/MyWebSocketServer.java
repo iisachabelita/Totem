@@ -1,27 +1,23 @@
 package com.projeto.gertecserver;
-import android.util.Log;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.json.JSONObject;
-
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 
-public class MyWebSocketServer extends WebSocketServer {
-    private final WebSocketService context;
+public class MyWebSocketServer extends WebSocketServer{
+    private WebSocketService context;
     private CliSiTef clisitef;
-    public MyWebSocketServer(int port, WebSocketService context){
+
+    public MyWebSocketServer(int port,WebSocketService context){
         super(new InetSocketAddress(port));
         this.context = context;
     }
 
     @Override
-    public void onOpen(WebSocket conn, ClientHandshake handshake){
-        conn.send("{\"status\":\"conectado\"}"); // Mensagem de teste
-        System.out.println("Cliente conectado");
+    public void onOpen(WebSocket conn,ClientHandshake handshake){
+        conn.send("Cliente conectado");
     }
 
     @Override
@@ -32,8 +28,7 @@ public class MyWebSocketServer extends WebSocketServer {
 
             if("Printer".equals(activity)){
                 Impressora impressora = new Impressora(context);
-                String resposta = impressora.imprimir(json);
-                conn.send(resposta);
+                impressora.imprimir(json);
             }
 
             if("CliSiTef".equals(activity)){
@@ -42,25 +37,29 @@ public class MyWebSocketServer extends WebSocketServer {
             }
 
             if("continueTransaction".equals(activity)){
-                clisitef.continueTransaction(2, json.getString("return"));
+                clisitef.continueTransaction(json.getString("return"));
             }
-        } catch(Exception e){
-            conn.send("{\"status\":\"erro\",\"mensagem\":\"JSON inválido ou erro interno\"}");
-            e.printStackTrace();
-        }
+        } catch(Exception e){ e.printStackTrace(); }
     }
 
     @Override
-    public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        System.out.println("Desconectado: " + reason);
-    }
+    public void onClose(WebSocket conn,int code,String reason,boolean remote){ restartServer(); }
 
     @Override
-    public void onError(WebSocket conn, Exception ex) {
-        ex.printStackTrace();
-    }
+    public void onError(WebSocket conn,Exception ex){ restartServer(); }
 
     @Override
     public void onStart(){}
+
+    private void restartServer(){
+        try{ this.stop(); } catch(Exception ignored){}
+
+        new Thread(() -> {
+            try{
+                Thread.sleep(2000);
+                this.start();
+            } catch(Exception e){ e.printStackTrace(); }
+        }).start();
+    }
 }
 

@@ -1,6 +1,33 @@
 package com.projeto.gertecserver;
 
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_ABORT_REQUEST;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_HEADER;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MENU_TITLE;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CASHIER;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CASHIER_CUSTOMER;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CUSTOMER;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CONFIRMATION;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CONFIRM_GO_BACK;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_BARCODE;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_CHEQUE;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_CURRENCY;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_INTERNAL;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_PASSWORD;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_TRACK;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_MASKED_FIELD;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_MENU_OPTION;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_PINPAD_CONFIRMATION;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_MESSAGE_QRCODE;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_PRESS_ANY_KEY;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_REMOVE_QRCODE_FIELD;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_RESULT_DATA;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_HEADER;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MENU_TITLE;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER_CUSTOMER;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CUSTOMER;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_QRCODE_FIELD;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -10,9 +37,12 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import org.java_websocket.WebSocket;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
@@ -20,6 +50,7 @@ import java.util.Date;
 
 import br.com.softwareexpress.sitef.android.ICliSiTefListener;
 import br.com.softwareexpress.sitef.android.modules.IPinPad;
+import kotlin.collections.UArraySortingKt;
 
 public class CliSiTef implements ICliSiTefListener{
     private final Context context;
@@ -61,14 +92,6 @@ public class CliSiTef implements ICliSiTefListener{
             }
         }
 
-        try {
-            boolean teste = clisitef.pinpad.isPresent();
-            Log.e("CliSiTef", "PINPAD PRESENT: " + teste);
-//            clisitef.pinpad.setDisplayMessage("start transaction...",true);
-        } catch(Exception e){
-            Log.e("CliSiTef", "PINPAD ERRO: " + e.getMessage());
-        }
-
         JSONObject parameters = json.optJSONObject("parameters");
         int modalidade = parameters.optInt("modalidade");
         String valor = parameters.optString("valor");
@@ -86,27 +109,6 @@ public class CliSiTef implements ICliSiTefListener{
         Log.e("CliSiTef", "START TRANSACTION: " + status);
     }
 
-//    public void pinpad(JSONObject json){
-//        if(!isConfigured){
-//            int config = configurarCliSiTef(json);
-//            if(config != 0){
-//                conn.send("Erro ao configurar CliSiTef");
-//                return;
-//            }
-//        }
-//
-//        int teste1 = clisitef.pinpad.setDisplayMessage("Iniciando transação... teste 1");
-//        Log.e("CliSiTef", "PINPAD: " + teste1);
-//
-//        try {
-//            boolean teste = clisitef.pinpad.isPresent();
-//            Log.e("CliSiTef", "PINPAD: " + teste);
-//            clisitef.pinpad.setDisplayMessage("Iniciando transação...");
-//        } catch(Exception e){
-//            Log.e("CliSiTef", "Erro ao acessar PINPAD: " + e.getMessage());
-//        }
-//    }
-
     @Override
     public void onData(
         int stage,       // Etapa da transação
@@ -119,43 +121,59 @@ public class CliSiTef implements ICliSiTefListener{
         Log.e("CliSiTef", "onData, stage: " + stage + " command: " + command + " fieldId: " + fieldId + " minLength: " + minLength + " maxLength: " + maxLength + " input: " + new String(input));
 
         switch(command){
-            case CMD_RESULT_DATA:
-
+//            case CMD_RESULT_DATA:
+//            case CMD_SHOW_MSG_CASHIER:
+//            case CMD_SHOW_MSG_CASHIER_CUSTOMER:
+//            case CMD_CLEAR_MSG_CASHIER_CUSTOMER:
+//            case CMD_SHOW_MSG_CUSTOMER:
+//            case CMD_SHOW_MENU_TITLE:
+//            case CMD_CLEAR_MSG_CASHIER:
+//            case CMD_CLEAR_MSG_CUSTOMER:
+//            case CMD_CLEAR_MENU_TITLE:
+//            case CMD_SHOW_HEADER:
+//            case CMD_CLEAR_HEADER:
+//            case CMD_CONFIRM_GO_BACK:
+//            case CMD_CONFIRMATION:
+            case CMD_GET_MENU_OPTION:
+                conn.send(new String(input));
+                break;
+//            case CMD_PRESS_ANY_KEY:
+//            case CMD_ABORT_REQUEST:
+//            case CMD_GET_FIELD_INTERNAL:
+//            case CMD_GET_FIELD:
+//            case CMD_GET_FIELD_CHEQUE:
+//            case CMD_GET_FIELD_TRACK:
+//            case CMD_GET_FIELD_PASSWORD:
+//            case CMD_GET_FIELD_CURRENCY:
+//            case CMD_GET_FIELD_BARCODE:
+//            case CMD_GET_PINPAD_CONFIRMATION:
+//            case CMD_GET_MASKED_FIELD:
+//            case CMD_SHOW_QRCODE_FIELD:
+//            case CMD_REMOVE_QRCODE_FIELD:
+//            case CMD_MESSAGE_QRCODE:
+            default:
+                clisitef.continueTransaction("");
+                break;
         }
+    }
 
-        if(command == 0){
-            clisitef.continueTransaction("");
-        } else{
-//            continueTransaction(1,data);
-        }
+    public void continueTransaction(String returnTransaction){
+        clisitef.continueTransaction(returnTransaction);
     }
 
     @Override
     public void onTransactionResult(int stage,int resultCode){
         Log.d("CliSiTef","onTransactionResult, stage " + stage + " resultCode: " + resultCode);
 
-        clisitef.finishTransaction(1, "","", "", "");
-
-        JSONObject response = new JSONObject();
-        try {
-            response.put("status", "finalizado");
-            response.put("codigo", resultCode);
-        } catch (Exception e){
-            Log.e("CliSiTef", "Erro JSON: " + e.getMessage());
-        }
-        conn.send(response.toString());
-    }
-
-    public void continueTransaction(int stage, String data){
-        // Enviando dados para o totem
-        if(stage == 1){
-            conn.send(data);
+        if(resultCode == 0){
+            //imprimir
         }
 
-        // Coletando dados no pinpad
-        if(stage == 2){
-            int status = clisitef.continueTransaction(data);
-            Log.e("CliSiTef", "CONTINUE TRANSACTION: " + status);
-        }
+        String dataFiscal = new SimpleDateFormat("yyyyMMdd").format(new Date());
+        String horaFiscal = new SimpleDateFormat("HHmmss").format(new Date());
+
+        clisitef.finishTransaction(1,"123",dataFiscal,horaFiscal,"");
+//        try { clisitef.finishTransaction(1); } catch(Exception e){ throw new RuntimeException(e); }
+        //        try { clisitef.finishTransaction(0); } catch(Exception e){ throw new RuntimeException(e); }
     }
 }
