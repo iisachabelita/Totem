@@ -58,6 +58,8 @@ public class CliSiTef implements ICliSiTefListener{
     private final WebSocket conn;
     private boolean isConfigured = false;
 
+    private String cupom;
+
     public CliSiTef(Context context,WebSocket conn){
         this.context = context.getApplicationContext();
         this.clisitef = new br.com.softwareexpress.sitef.android.CliSiTef(this.context);
@@ -87,7 +89,11 @@ public class CliSiTef implements ICliSiTefListener{
         if(!isConfigured){
             int config = configurarCliSiTef(json);
             if(config != 0){
-                conn.send("Erro ao configurar CliSiTef");
+                try {
+                    JSONObject jsonResponse = new JSONObject();
+                    jsonResponse.put("status","erro ao configurar CliSiTef");
+                    conn.send(jsonResponse.toString());
+                } catch(JSONException e){}
                 return;
             }
         }
@@ -120,7 +126,8 @@ public class CliSiTef implements ICliSiTefListener{
     ){
         Log.e("CliSiTef", "onData, stage: " + stage + " command: " + command + " fieldId: " + fieldId + " minLength: " + minLength + " maxLength: " + maxLength + " input: " + new String(input));
 
-        switch(command){
+        if(stage == 1){
+            switch(command){
 //            case CMD_RESULT_DATA:
 //            case CMD_SHOW_MSG_CASHIER:
 //            case CMD_SHOW_MSG_CASHIER_CUSTOMER:
@@ -134,13 +141,26 @@ public class CliSiTef implements ICliSiTefListener{
 //            case CMD_CLEAR_HEADER:
 //            case CMD_CONFIRM_GO_BACK:
 //            case CMD_CONFIRMATION:
-            case CMD_GET_MENU_OPTION:
-                conn.send(new String(input));
-                break;
+                case CMD_GET_MENU_OPTION:
+                    try {
+                        JSONObject jsonResponse = new JSONObject();
+                        jsonResponse.put("message",new String(input));
+                        conn.send(jsonResponse.toString());
+                    } catch(JSONException e){}
+                    break;
+                case CMD_GET_FIELD:
+
+                    try {
+                        JSONObject jsonResponse = new JSONObject();
+                        jsonResponse.put("message",new String(input));
+                        jsonResponse.put("minLength",minLength);
+                        jsonResponse.put("maxLength",maxLength);
+                        conn.send(jsonResponse.toString());
+                    } catch(JSONException e){}
+                    break;
 //            case CMD_PRESS_ANY_KEY:
 //            case CMD_ABORT_REQUEST:
 //            case CMD_GET_FIELD_INTERNAL:
-//            case CMD_GET_FIELD:
 //            case CMD_GET_FIELD_CHEQUE:
 //            case CMD_GET_FIELD_TRACK:
 //            case CMD_GET_FIELD_PASSWORD:
@@ -151,13 +171,24 @@ public class CliSiTef implements ICliSiTefListener{
 //            case CMD_SHOW_QRCODE_FIELD:
 //            case CMD_REMOVE_QRCODE_FIELD:
 //            case CMD_MESSAGE_QRCODE:
-            default:
-                clisitef.continueTransaction("");
-                break;
+                default:
+                    clisitef.continueTransaction("");
+                    break;
+            }
+        }
+
+        if(fieldId == 121){
+            cupom = new String(input);
         }
     }
 
-    public void continueTransaction(String returnTransaction){
+    public void continueTransaction(String returnTransaction, String CMD){
+        if(CMD.equals(CMD_GET_FIELD)){
+            clisitef.setBuffer(returnTransaction);
+            clisitef.continueTransaction("");
+            return;
+        }
+
         clisitef.continueTransaction(returnTransaction);
     }
 
@@ -166,14 +197,12 @@ public class CliSiTef implements ICliSiTefListener{
         Log.d("CliSiTef","onTransactionResult, stage " + stage + " resultCode: " + resultCode);
 
         if(resultCode == 0){
-            //imprimir
+            // Impressora impressora = new Impressora(context);
+            // impressora.imprimirComprovante(cupom);
         }
 
-        String dataFiscal = new SimpleDateFormat("yyyyMMdd").format(new Date());
-        String horaFiscal = new SimpleDateFormat("HHmmss").format(new Date());
-
-        clisitef.finishTransaction(1,"123",dataFiscal,horaFiscal,"");
-//        try { clisitef.finishTransaction(1); } catch(Exception e){ throw new RuntimeException(e); }
-        //        try { clisitef.finishTransaction(0); } catch(Exception e){ throw new RuntimeException(e); }
+        if(stage == 1 && resultCode == 0){
+            try { clisitef.finishTransaction(1); } catch(Exception e){ throw new RuntimeException(e); }
+        }
     }
 }

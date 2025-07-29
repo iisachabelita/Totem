@@ -1,15 +1,22 @@
 package com.projeto.gertecserver;
 
+import static android.widget.Toast.makeText;
+
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import br.com.gertec.easylayer.printer.Alignment;
 import br.com.gertec.easylayer.printer.CutType;
 import br.com.gertec.easylayer.printer.OrientationType;
 import br.com.gertec.easylayer.printer.Printer;
 import br.com.gertec.easylayer.printer.PrinterError;
+import br.com.gertec.easylayer.printer.Receipt;
 import br.com.gertec.easylayer.printer.TextFormat;
 
 public class Impressora implements Printer.Listener {
@@ -50,6 +57,10 @@ public class Impressora implements Printer.Listener {
             Log.e("Impressora", "Erro ao imprimir: " + e.getMessage(), e);
             return "{\"status\":\"erro\",\"mensagem\":\"Erro ao imprimir: " + e.getMessage() + "\"}";
         }
+    }
+
+    public void imprimirComprovante(String text){
+        Receipt cupom = new Receipt();
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.projeto.gertecserver;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
+import org.json.JSONException;
 import org.json.JSONObject;
 import java.net.InetSocketAddress;
 
@@ -17,7 +18,13 @@ public class MyWebSocketServer extends WebSocketServer{
 
     @Override
     public void onOpen(WebSocket conn,ClientHandshake handshake){
-        conn.send("Cliente conectado");
+        try {
+            JSONObject jsonResponse = new JSONObject();
+            jsonResponse.put("status","cliente conectado");
+            conn.send(jsonResponse.toString());
+        } catch(JSONException e){
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -37,8 +44,13 @@ public class MyWebSocketServer extends WebSocketServer{
             }
 
             if("continueTransaction".equals(activity)){
-                clisitef.continueTransaction(json.getString("return"));
+                String CMD = "";
+                if(json.getBoolean("CMD") == true){
+                    CMD = "CMD_GET_FIELD";
+                }
+                clisitef.continueTransaction(json.getString("return"),CMD);
             }
+
         } catch(Exception e){ e.printStackTrace(); }
     }
 
@@ -46,7 +58,20 @@ public class MyWebSocketServer extends WebSocketServer{
     public void onClose(WebSocket conn,int code,String reason,boolean remote){ restartServer(); }
 
     @Override
-    public void onError(WebSocket conn,Exception ex){ restartServer(); }
+    public void onError(WebSocket conn,Exception ex){
+        restartServer();
+
+        if(conn != null && conn.isOpen()){
+            try {
+                JSONObject jsonResponse = new JSONObject();
+                jsonResponse.put("status", "erro");
+                jsonResponse.put("mensagem", ex.getMessage());
+                conn.send(jsonResponse.toString());
+            } catch(JSONException e){
+                e.printStackTrace();
+            }
+        }
+    }
 
     @Override
     public void onStart(){}
