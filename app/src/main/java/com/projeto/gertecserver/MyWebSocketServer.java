@@ -1,5 +1,7 @@
 package com.projeto.gertecserver;
 
+import android.util.Log;
+
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -10,6 +12,8 @@ import java.net.InetSocketAddress;
 public class MyWebSocketServer extends WebSocketServer{
     private WebSocketService context;
     private CliSiTef clisitef;
+
+    public static boolean isConfigured = false;
 
     public MyWebSocketServer(int port,WebSocketService context){
         super(new InetSocketAddress(port));
@@ -59,6 +63,7 @@ public class MyWebSocketServer extends WebSocketServer{
 
     @Override
     public void onError(WebSocket conn,Exception ex){
+        Log.d("MyWebSocketServer","onError: " + ex.getMessage());
         restartServer();
 
         if(conn != null && conn.isOpen()){
