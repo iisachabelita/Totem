@@ -1,5 +1,7 @@
 package com.projeto.gertecserver;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import org.java_websocket.WebSocket;
@@ -18,6 +20,9 @@ public class MyWebSocketServer extends WebSocketServer{
     public MyWebSocketServer(int port,WebSocketService context){
         super(new InetSocketAddress(port));
         this.context = context;
+
+//        SharedPreferences prefs = context.getSharedPreferences("ws_config", Context.MODE_PRIVATE);
+//        isConfigured = prefs.getBoolean("isConfigured", false);
     }
 
     @Override
@@ -43,15 +48,20 @@ public class MyWebSocketServer extends WebSocketServer{
             }
 
             if("CliSiTef".equals(activity)){
-                clisitef = new CliSiTef(context,conn);
+                if(!isConfigured){
+                    clisitef = new CliSiTef(context,conn);
+//                    SharedPreferences prefs = context.getSharedPreferences("ws_config", Context.MODE_PRIVATE);
+//                    prefs.edit().putBoolean("isConfigured", true).apply();
+
+                    // Resetar isConfigured
+                    // SharedPreferences prefs = context.getSharedPreferences("ws_config", Context.MODE_PRIVATE);
+                    // prefs.edit().clear().apply();
+                }
                 clisitef.transaction(json);
             }
 
             if("continueTransaction".equals(activity)){
-                String CMD = "";
-                if(json.getBoolean("CMD") == true){
-                    CMD = "CMD_GET_FIELD";
-                }
+                String CMD = json.getBoolean("CMD") ? "CMD_GET_FIELD" : "";
                 clisitef.continueTransaction(json.getString("return"),CMD);
             }
 
@@ -82,10 +92,10 @@ public class MyWebSocketServer extends WebSocketServer{
     public void onStart(){}
 
     private void restartServer(){
-        try{ this.stop(); } catch(Exception ignored){}
+        try { this.stop(); } catch(Exception ignored){}
 
         new Thread(() -> {
-            try{
+            try {
                 Thread.sleep(2000);
                 this.start();
             } catch(Exception e){ e.printStackTrace(); }
