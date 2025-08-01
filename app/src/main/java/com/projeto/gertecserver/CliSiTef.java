@@ -27,7 +27,7 @@ import br.com.softwareexpress.sitef.android.ICliSiTefListener;
 public class CliSiTef implements ICliSiTefListener{
     private final Context context;
     private final br.com.softwareexpress.sitef.android.CliSiTef clisitef;
-    private final WebSocket conn;
+    private WebSocket conn;
     private int modalidade;
     private String valor;
     private String docFiscal;
@@ -35,15 +35,21 @@ public class CliSiTef implements ICliSiTefListener{
     private String horaFiscal;
     private String operador;
     private String restricoes;
+    private String credito;
+    private boolean parcela;
     private int retry = 0;
     private String cupom;
-
     private String taxaServico;
+    private long abortStartTime = 0L;
+    private boolean abortHandlingActive;
 
     public CliSiTef(Context context,WebSocket conn){
         this.context = context.getApplicationContext();
         this.clisitef = new br.com.softwareexpress.sitef.android.CliSiTef(this.context);
         this.conn = conn;
+    }
+    public void setWebSocket(WebSocket newConn) {
+        this.conn = newConn;
     }
     public int configurarCliSiTef(JSONObject json){
         String IPSiTef = json.optString("IPSiTef");
@@ -95,7 +101,12 @@ public class CliSiTef implements ICliSiTefListener{
         operador = parameters.optString("operador");
         restricoes = parameters.optString("restricoes");
 
+        // Tratativa para modalidade de crédito parcelado
+        credito = parameters.optString( "credito");
+        parcela = parameters.optBoolean("parcela");
+
         retry = 0;
+        abortHandlingActive = false;
 
         int pendingMessages = clisitef.submitPendingMessages();
 
@@ -123,38 +134,27 @@ public class CliSiTef implements ICliSiTefListener{
         if(stage == 1){
             switch(command){
                 case CMD_GET_MENU_OPTION: // 21
+                    if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
+
                     switch(modalidade){
                         case 2: // Débito
                             clisitef.continueTransaction("1"); // À vista
                             return;
                         case 3: // Crédito
-                            try {
-                                JSONObject jsonResponse = new JSONObject();
-                                jsonResponse.put("message",new String(input));
-                                conn.send(jsonResponse.toString());
-                            } catch(JSONException e){}
+                            // À vista
+                            if(!parcela){
+                                clisitef.continueTransaction("1");
+                            } else{
+                                // Parcelado
+                                // 2 - pelo estabelecimento
+                                // 3 - pela administradora
+                                clisitef.continueTransaction(credito);
+                            }
                             return;
                     }
-                    // Modalidade de pagamento no formato xxnn.
-                    // xx corresponde ao grupo da modalidade e nn ao subgrupo.
-
-                    // Grupo:
-                    // - 00: Cheque
-                    //    - 01: Cartão de Débito
-                    //  - 02: Cartão de Crédito
-                    //  - 03: Cartão tipo Voucher
-                    //  - 05: Cartão Fidelidade
-                    // - 98: Dinheiro
-                    //  - 99: Outro tipo de cartão
-                    // Subgrupo:
-                    // - 00: À vista
-                    // - 01: Pré-datado
-                    // - 02: Parcelado com financiamento pelo estabelecimento
-                    //  - 03: Parcelado com financiamento pela administradora
-                    //  - 04: À vista com juros
-                    // - 05: Crediário
-                    //  - 99: Outro tipo de pagamento
                 case CMD_CONFIRMATION:// 20
+                    if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
+
                     // Erro leitura do cartão
                     String confirm;
 
@@ -176,13 +176,19 @@ public class CliSiTef implements ICliSiTefListener{
                     );
                     return;
                 case CMD_GET_FIELD: // 30
-                    try {
-                        JSONObject jsonResponse = new JSONObject();
-                        jsonResponse.put("message",new String(input));
-                        jsonResponse.put("minLength",minLength);
-                        jsonResponse.put("maxLength",maxLength);
-                        conn.send(jsonResponse.toString());
-                    } catch(JSONException e){}
+                    if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
+
+                    switch(fieldId){
+                        case 505: // Número de parcelas (DEVE SER > 1)
+                            try {
+                                JSONObject jsonResponse = new JSONObject();
+                                jsonResponse.put("message",new String(input));
+                                jsonResponse.put("minLength",minLength);
+                                jsonResponse.put("maxLength",maxLength);
+                                conn.send(jsonResponse.toString());
+                            } catch(JSONException e){}
+                            break;
+                    }
                     return;
             case CMD_PRESS_ANY_KEY: // 22
             case CMD_SHOW_MSG_CASHIER_CUSTOMER: // 3
@@ -203,14 +209,26 @@ public class CliSiTef implements ICliSiTefListener{
                 // Valor monetário
                 switch(fieldId){
                     case 504:
+                        if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
+
                         clisitef.continueTransaction(taxaServico);
                         return;
                 }
                 break;
             case CMD_ABORT_REQUEST: // 23
-                // tratativa para controlar por quanto tempo irá aguardar o contato com periférico
-                break;
-            case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
+                long now = System.currentTimeMillis();
+
+                if(!abortHandlingActive){
+                    abortStartTime = now;
+                    abortHandlingActive = true;
+                } else{
+                    long elapsed = now - abortStartTime;
+                    if(elapsed >= 40000) { // 40 segundos
+                        try { clisitef.finishTransaction(0); } catch(Exception e){} // Cancela
+                        abortHandlingActive = false;
+                    }
+                }
+                case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
                 // Limpa mensagem enviada pelo CMD_PRESS_ANY_KEY & CMD_SHOW_MSG_CASHIER_CUSTOMER
                 try {
                     JSONObject jsonResponse = new JSONObject();
@@ -220,16 +238,11 @@ public class CliSiTef implements ICliSiTefListener{
             }
         }
 
+        if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
         clisitef.continueTransaction("");
     }
 
-    public void continueTransaction(String returnTransaction, String CMD){
-        if(CMD.equals("CMD_GET_FIELD")){
-            clisitef.setBuffer(returnTransaction);
-            clisitef.continueTransaction("");
-            return;
-        }
-
+    public void continueTransaction(String returnTransaction){
         clisitef.continueTransaction(returnTransaction);
     }
 

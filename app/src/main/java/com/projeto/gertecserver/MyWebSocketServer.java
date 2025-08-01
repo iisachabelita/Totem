@@ -13,16 +13,12 @@ import java.net.InetSocketAddress;
 
 public class MyWebSocketServer extends WebSocketServer{
     private WebSocketService context;
-    private CliSiTef clisitef;
 
     public static boolean isConfigured = false;
 
     public MyWebSocketServer(int port,WebSocketService context){
         super(new InetSocketAddress(port));
         this.context = context;
-
-//        SharedPreferences prefs = context.getSharedPreferences("ws_config", Context.MODE_PRIVATE);
-//        isConfigured = prefs.getBoolean("isConfigured", false);
     }
 
     @Override
@@ -31,9 +27,7 @@ public class MyWebSocketServer extends WebSocketServer{
             JSONObject jsonResponse = new JSONObject();
             jsonResponse.put("status","cliente conectado");
             conn.send(jsonResponse.toString());
-        } catch(JSONException e){
-            e.printStackTrace();
-        }
+        } catch(JSONException e){}
     }
 
     @Override
@@ -48,33 +42,30 @@ public class MyWebSocketServer extends WebSocketServer{
             }
 
             if("CliSiTef".equals(activity)){
-                if(!isConfigured){
-                    clisitef = new CliSiTef(context,conn);
-//                    SharedPreferences prefs = context.getSharedPreferences("ws_config", Context.MODE_PRIVATE);
-//                    prefs.edit().putBoolean("isConfigured", true).apply();
-
-                    // Resetar isConfigured
-                    // SharedPreferences prefs = context.getSharedPreferences("ws_config", Context.MODE_PRIVATE);
-                    // prefs.edit().clear().apply();
+                if(WebSocketService.clisitef == null){
+                    WebSocketService.clisitef = new CliSiTef(context,conn);
+                } else{
+                    WebSocketService.clisitef.setWebSocket(conn);
                 }
-                clisitef.transaction(json);
+
+                WebSocketService.clisitef.transaction(json);
             }
 
             if("continueTransaction".equals(activity)){
-                String CMD = json.getBoolean("CMD") ? "CMD_GET_FIELD" : "";
-                clisitef.continueTransaction(json.getString("return"),CMD);
+                WebSocketService.clisitef.continueTransaction(json.getString("return"));
             }
 
         } catch(Exception e){ e.printStackTrace(); }
     }
 
     @Override
-    public void onClose(WebSocket conn,int code,String reason,boolean remote){ restartServer(); }
+    public void onClose(WebSocket conn,int code,String reason,boolean remote){
+        Log.d("WebSocket", "Pronto para aceitar novas conexões.");
+    }
 
     @Override
     public void onError(WebSocket conn,Exception ex){
         Log.d("MyWebSocketServer","onError: " + ex.getMessage());
-        restartServer();
 
         if(conn != null && conn.isOpen()){
             try {
@@ -82,14 +73,16 @@ public class MyWebSocketServer extends WebSocketServer{
                 jsonResponse.put("status", "erro");
                 jsonResponse.put("mensagem", ex.getMessage());
                 conn.send(jsonResponse.toString());
-            } catch(JSONException e){
-                e.printStackTrace();
-            }
+            } catch(JSONException e){}
         }
+
+        restartServer();
     }
 
     @Override
-    public void onStart(){}
+    public void onStart(){
+        Log.d("WebSocket", "Servidor WebSocket iniciado e escutando em: " + getAddress());
+    }
 
     private void restartServer(){
         try { this.stop(); } catch(Exception ignored){}
