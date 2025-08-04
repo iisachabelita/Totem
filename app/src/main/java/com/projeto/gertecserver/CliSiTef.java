@@ -36,7 +36,7 @@ public class CliSiTef implements ICliSiTefListener{
     private String operador;
     private String restricoes;
     private String credito;
-    private boolean parcela;
+    private int parcelas;
     private int retry = 0;
     private String cupom;
     private String taxaServico;
@@ -103,7 +103,7 @@ public class CliSiTef implements ICliSiTefListener{
 
         // Tratativa para modalidade de crédito parcelado
         credito = parameters.optString( "credito");
-        parcela = parameters.optBoolean("parcela");
+        parcelas = parameters.optInt("parcelas");
 
         retry = 0;
         abortHandlingActive = false;
@@ -142,7 +142,7 @@ public class CliSiTef implements ICliSiTefListener{
                             return;
                         case 3: // Crédito
                             // À vista
-                            if(!parcela){
+                            if(parcelas == 1){
                                 clisitef.continueTransaction("1");
                             } else{
                                 // Parcelado
@@ -180,16 +180,18 @@ public class CliSiTef implements ICliSiTefListener{
 
                     switch(fieldId){
                         case 505: // Número de parcelas (DEVE SER > 1)
-                            try {
-                                JSONObject jsonResponse = new JSONObject();
-                                jsonResponse.put("message",new String(input));
-                                jsonResponse.put("minLength",minLength);
-                                jsonResponse.put("maxLength",maxLength);
-                                conn.send(jsonResponse.toString());
-                            } catch(JSONException e){}
+                            // try {
+                                // JSONObject jsonResponse = new JSONObject();
+                                // jsonResponse.put("message",new String(input));
+                                // // jsonResponse.put("minLength",minLength); // está ignorando
+                                // // jsonResponse.put("maxLength",maxLength); // está ignorando
+                                // conn.send(jsonResponse.toString());
+                            // } catch(JSONException e){}
+
+                            continueTransaction(String.valueOf(parcelas));
                             break;
                     }
-                    return;
+                     return;
             case CMD_PRESS_ANY_KEY: // 22
             case CMD_SHOW_MSG_CASHIER_CUSTOMER: // 3
                 try {
@@ -228,7 +230,8 @@ public class CliSiTef implements ICliSiTefListener{
                         abortHandlingActive = false;
                     }
                 }
-                case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
+                break;
+            case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
                 // Limpa mensagem enviada pelo CMD_PRESS_ANY_KEY & CMD_SHOW_MSG_CASHIER_CUSTOMER
                 try {
                     JSONObject jsonResponse = new JSONObject();
