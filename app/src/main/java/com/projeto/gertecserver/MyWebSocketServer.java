@@ -2,11 +2,15 @@ package com.projeto.gertecserver;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
 import android.util.Log;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.net.InetSocketAddress;
@@ -15,6 +19,7 @@ public class MyWebSocketServer extends WebSocketServer{
     private WebSocketService context;
 
     public static boolean isConfigured = false;
+    public static String cupom;
 
     public MyWebSocketServer(int port,WebSocketService context){
         super(new InetSocketAddress(port));
@@ -37,8 +42,14 @@ public class MyWebSocketServer extends WebSocketServer{
             String activity = json.optString("activity");
 
             if("Printer".equals(activity)){
-                Impressora impressora = new Impressora(context);
-                impressora.imprimir(json);
+                String image = json.optString("image");
+                byte[] imageBytes = Base64.decode(image,Base64.DEFAULT);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+
+                if(bitmap != null){
+                    Impressora impressora = new Impressora(context);
+                    impressora.imprimirComprovante(bitmap);
+                }
             }
 
             if("CliSiTef".equals(activity)){
@@ -55,7 +66,7 @@ public class MyWebSocketServer extends WebSocketServer{
                 WebSocketService.clisitef.continueTransaction(json.getString("return"));
             }
 
-        } catch(Exception e){ e.printStackTrace(); }
+        } catch(Exception e){}
     }
 
     @Override

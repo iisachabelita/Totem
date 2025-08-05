@@ -1,42 +1,39 @@
 package com.projeto.gertecserver;
 
 import static android.widget.Toast.makeText;
-
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.util.Log;
 import android.widget.Toast;
-
 import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import br.com.gertec.easylayer.printer.Alignment;
 import br.com.gertec.easylayer.printer.CutType;
 import br.com.gertec.easylayer.printer.OrientationType;
 import br.com.gertec.easylayer.printer.Printer;
 import br.com.gertec.easylayer.printer.PrinterError;
-import br.com.gertec.easylayer.printer.Receipt;
+import br.com.gertec.easylayer.printer.PrinterException;
+import br.com.gertec.easylayer.printer.PrinterUtils;
 import br.com.gertec.easylayer.printer.TextFormat;
 
 public class Impressora implements Printer.Listener {
-
     private final Context context;
     private final Printer printer;
 
-    public Impressora(Context context) {
+    public Impressora(Context context){
         this.context = context.getApplicationContext(); // Use ApplicationContext
         this.printer = Printer.getInstance(this.context, this);
+        printer.setPrinterOrientation(OrientationType.INVERTED);
     }
 
-    public String imprimir(JSONObject json) {
-        try {
-            JSONObject params = json.optJSONObject("parameters");
-            String text = params != null ? params.optString("text", "Texto vazio") : "Texto vazio";
+    public void imprimirComprovante(Bitmap image){
+        // Receipt cupom = new Receipt();
 
-            if (text.trim().isEmpty()) {
-                text = "Texto vazio";
-            }
+        try {
+            // Impressão texto
+            // if(MyWebSocketServer.cupom.trim().isEmpty()){
+            Log.e("Impressora", MyWebSocketServer.cupom);
+                MyWebSocketServer.cupom = "Texto vazio";
+            // }
 
             TextFormat textFormat = new TextFormat();
             textFormat.setBold(true);
@@ -45,31 +42,31 @@ public class Impressora implements Printer.Listener {
             textFormat.setLineSpacing(6);
             textFormat.setAlignment(Alignment.CENTER);
 
-            printer.setPrinterOrientation(OrientationType.DEFAULT);
-            printer.printText(textFormat, text);
-            printer.scrollPaper(3);
+            printer.printText(textFormat,MyWebSocketServer.cupom);
+            printer.scrollPaper(1);
+
+            PrinterUtils printerUtils = printer.getPrinterUtils();
+            Bitmap monochromaticBitmap = printerUtils.toMonochromatic(image, 0.5);
+
+            //Impressão imagem
+            printer.printImageAutoResize(monochromaticBitmap);
+            printer.scrollPaper(1);
+
             printer.cutPaper(CutType.PAPER_FULL_CUT);
 
-            Log.i("Impressora", "Impressão realizada com sucesso.");
-            return "{\"status\":\"ok\",\"mensagem\":\"Impressão realizada\"}";
-
-        } catch (Exception e) {
-            Log.e("Impressora", "Erro ao imprimir: " + e.getMessage(), e);
-            return "{\"status\":\"erro\",\"mensagem\":\"Erro ao imprimir: " + e.getMessage() + "\"}";
-        }
-    }
-
-    public void imprimirComprovante(String text){
-        Receipt cupom = new Receipt();
+            //Toast de impressão
+            makeText(context, "Imprimindo", Toast.LENGTH_SHORT).show();
+            MyWebSocketServer.cupom = "";
+        } catch(PrinterException e){}
     }
 
     @Override
-    public void onPrinterError(PrinterError printerError) {
+    public void onPrinterError(PrinterError printerError){
         Log.e("Impressora", "Erro de impressora: " + printerError.getCause());
     }
 
     @Override
-    public void onPrinterSuccessful(int printerRequestId) {
+    public void onPrinterSuccessful(int printerRequestId){
         Log.i("Impressora", "Impressão realizada com sucesso. ID: " + printerRequestId);
     }
 }

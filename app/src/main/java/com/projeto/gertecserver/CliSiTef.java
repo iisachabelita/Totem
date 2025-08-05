@@ -38,10 +38,9 @@ public class CliSiTef implements ICliSiTefListener{
     private String credito;
     private int parcelas;
     private int retry = 0;
-    private String cupom;
     private String taxaServico;
-    private long abortStartTime = 0L;
-    private boolean abortHandlingActive;
+    // private long abortStartTime = 0L;
+    // private boolean abortHandlingActive;
 
     public CliSiTef(Context context,WebSocket conn){
         this.context = context.getApplicationContext();
@@ -99,14 +98,14 @@ public class CliSiTef implements ICliSiTefListener{
         dataFiscal = new SimpleDateFormat("yyyyMMdd").format(new Date());
         horaFiscal = new SimpleDateFormat("HHmmss").format(new Date());
         operador = parameters.optString("operador");
-        restricoes = parameters.optString("restricoes");
+        restricoes = parameters.optString("restricoes","");
 
         // Tratativa para modalidade de crédito parcelado
         credito = parameters.optString( "credito");
         parcelas = parameters.optInt("parcelas");
 
         retry = 0;
-        abortHandlingActive = false;
+        // abortHandlingActive = false;
 
         int pendingMessages = clisitef.submitPendingMessages();
 
@@ -134,7 +133,7 @@ public class CliSiTef implements ICliSiTefListener{
         if(stage == 1){
             switch(command){
                 case CMD_GET_MENU_OPTION: // 21
-                    if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
+                    // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
 
                     switch(modalidade){
                         case 2: // Débito
@@ -153,7 +152,7 @@ public class CliSiTef implements ICliSiTefListener{
                             return;
                     }
                 case CMD_CONFIRMATION:// 20
-                    if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
+                    // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
 
                     // Erro leitura do cartão
                     String confirm;
@@ -176,7 +175,7 @@ public class CliSiTef implements ICliSiTefListener{
                     );
                     return;
                 case CMD_GET_FIELD: // 30
-                    if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
+                    // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
 
                     switch(fieldId){
                         case 505: // Número de parcelas (DEVE SER > 1)
@@ -203,7 +202,7 @@ public class CliSiTef implements ICliSiTefListener{
             case CMD_RESULT_DATA: // 0
                 switch(fieldId){
                     case 121:
-                        cupom = new String(input);
+                        MyWebSocketServer.cupom = new String(input);
                         break;
                 }
                 break;
@@ -211,25 +210,25 @@ public class CliSiTef implements ICliSiTefListener{
                 // Valor monetário
                 switch(fieldId){
                     case 504:
-                        if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
+                        // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
 
                         clisitef.continueTransaction(taxaServico);
                         return;
                 }
                 break;
             case CMD_ABORT_REQUEST: // 23
-                long now = System.currentTimeMillis();
+                // long now = System.currentTimeMillis();
 
-                if(!abortHandlingActive){
-                    abortStartTime = now;
-                    abortHandlingActive = true;
-                } else{
-                    long elapsed = now - abortStartTime;
-                    if(elapsed >= 40000) { // 40 segundos
-                        try { clisitef.finishTransaction(0); } catch(Exception e){} // Cancela
-                        abortHandlingActive = false;
-                    }
-                }
+                // if(!abortHandlingActive){
+                    // abortStartTime = now;
+                    // abortHandlingActive = true;
+                // } else{
+                    // long elapsed = now - abortStartTime;
+                    // if(elapsed >= 40000) { // 40 segundos
+                        // try { clisitef.finishTransaction(0); } catch(Exception e){} // Cancela
+                        // abortHandlingActive = false;
+                    // }
+                // }
                 break;
             case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
                 // Limpa mensagem enviada pelo CMD_PRESS_ANY_KEY & CMD_SHOW_MSG_CASHIER_CUSTOMER
@@ -241,7 +240,7 @@ public class CliSiTef implements ICliSiTefListener{
             }
         }
 
-        if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
+        // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
         clisitef.continueTransaction("");
     }
 
@@ -262,8 +261,21 @@ public class CliSiTef implements ICliSiTefListener{
         }
 
         if(stage == 2 && resultCode == 0){
-            // Impressora impressora = new Impressora(context);
-            // impressora.imprimirComprovante(cupom);
+            JSONObject jsonResponse = new JSONObject();
+            try {
+                jsonResponse.put("command", "getOrderInfo");
+                conn.send(jsonResponse.toString());
+            } catch(JSONException e){}
+        }
+
+        if(resultCode != 0){
+            JSONObject jsonResponse = new JSONObject();
+            try {
+                jsonResponse.put("status", "erro");
+                jsonResponse.put("codigo",resultCode);
+                jsonResponse.put("mensagem",clisitef.getBuffer());
+                conn.send(jsonResponse.toString());
+            } catch(JSONException e){}
         }
     }
 }
