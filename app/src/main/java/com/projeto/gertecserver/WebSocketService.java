@@ -13,6 +13,7 @@ import androidx.annotation.Nullable;
 public class WebSocketService extends Service{
     private MyWebSocketServer server;
     public static CliSiTef clisitef;
+    public static Intent scanner;
 
     @SuppressLint("ForegroundServiceType")
     @Override

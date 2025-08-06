@@ -1,16 +1,13 @@
 package com.projeto.gertecserver;
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
 import android.util.Log;
-
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.net.InetSocketAddress;
@@ -66,7 +63,17 @@ public class MyWebSocketServer extends WebSocketServer{
                 WebSocketService.clisitef.continueTransaction(json.getString("return"));
             }
 
-        } catch(Exception e){}
+            if("Scanner".equals(activity)){
+//                if(WebSocketService.scanner == null){
+                    WebSocketService.scanner = new Intent(context,Scanner.class);
+//                }
+
+                WebSocketService.scanner.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(WebSocketService.scanner);
+            }
+        } catch(Exception e){
+            Log.e("WebSocket", "Erro ao processar mensagem: " + e.getMessage());
+        }
     }
 
     @Override
