@@ -1,11 +1,11 @@
 package com.projeto.gertecserver;
 
-import static android.widget.Toast.makeText;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
-import android.widget.Toast;
-import org.json.JSONObject;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import br.com.gertec.easylayer.printer.Alignment;
 import br.com.gertec.easylayer.printer.CutType;
 import br.com.gertec.easylayer.printer.OrientationType;
@@ -18,44 +18,61 @@ import br.com.gertec.easylayer.printer.TextFormat;
 public class Impressora implements Printer.Listener {
     private final Context context;
     private final Printer printer;
+    private final PrinterUtils printerUtils;
 
     public Impressora(Context context){
-        this.context = context.getApplicationContext(); // Use ApplicationContext
+        this.context = context.getApplicationContext();
         this.printer = Printer.getInstance(this.context, this);
+
+        //Inicialização da classe PrinterUtils
+        this.printerUtils = printer.getPrinterUtils();
+
         printer.setPrinterOrientation(OrientationType.INVERTED);
     }
 
     public void imprimirComprovante(Bitmap image){
-        // Receipt cupom = new Receipt();
-
         try {
-            // Impressão texto
-            // if(MyWebSocketServer.cupom.trim().isEmpty()){
-            Log.e("Impressora", MyWebSocketServer.cupom);
-                MyWebSocketServer.cupom = "Texto vazio";
-            // }
+             if(MyWebSocketServer.cupom.trim().isEmpty()){
+                MyWebSocketServer.cupom = "Lorem Ipsum is simply dummy text of th...";
+             }
 
-            TextFormat textFormat = new TextFormat();
-            textFormat.setBold(true);
-            textFormat.setUnderscore(false);
-            textFormat.setFontSize(30);
-            textFormat.setLineSpacing(6);
-            textFormat.setAlignment(Alignment.CENTER);
+             // Divide por linha
+            String[] linhas = MyWebSocketServer.cupom.split("\n");
+            List<String> linhasList = Arrays.asList(linhas);
+            // Inverte
+            Collections.reverse(linhasList);
 
-            printer.printText(textFormat,MyWebSocketServer.cupom);
-            printer.scrollPaper(1);
+            // Verifica o tamanho da maior linha
+            int maxLen = linhasList.stream().mapToInt(String::length).max().orElse(0);
 
-            PrinterUtils printerUtils = printer.getPrinterUtils();
-            Bitmap monochromaticBitmap = printerUtils.toMonochromatic(image, 0.5);
+            // Define tamanho da fonte baseado na maior linha
+            int fontSize = maxLen <= 32 ? 30 :
+                            maxLen <= 36 ? 26 :
+                            maxLen <= 42 ? 22 :
+                            maxLen <= 48 ? 18 : 16;
+
+            // Configuração base de formatação
+            TextFormat format = new TextFormat();
+            format.setBold(true);
+            format.setUnderscore(false);
+            format.setFontSize(fontSize);
+            format.setAlignment(Alignment.LEFT);
+            format.setLineSpacing(4);
+
+            for(String linha : linhasList){
+                printer.printText(format,linha);
+            }
+
+            //Imprimir cupom
+            // Receipt cupom = new Receipt();
+            // printer.printXml(cupom);
 
             //Impressão imagem
-            printer.printImageAutoResize(monochromaticBitmap);
             printer.scrollPaper(1);
+            Bitmap monochromaticBitmap = printerUtils.toMonochromatic(image,0.5);
+            // printer.printImageAutoResize(monochromaticBitmap);
 
-            printer.cutPaper(CutType.PAPER_FULL_CUT);
-
-            //Toast de impressão
-            makeText(context, "Imprimindo", Toast.LENGTH_SHORT).show();
+            printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
             MyWebSocketServer.cupom = "";
         } catch(PrinterException e){}
     }
