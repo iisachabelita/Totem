@@ -1,6 +1,5 @@
 package com.projeto.gertecserver;
 
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
@@ -38,38 +37,21 @@ public class MyWebSocketServer extends WebSocketServer{
             JSONObject json = new JSONObject(message);
             String activity = json.optString("activity");
 
-            if("Printer".equals(activity)){
-                String image = json.optString("image");
-                byte[] imageBytes = Base64.decode(image,Base64.DEFAULT);
-                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-
-                if(bitmap != null){
-                    Impressora impressora = new Impressora(context);
-                    impressora.imprimirComprovante(bitmap);
-                }
-            }
-
-            if("CliSiTef".equals(activity)){
-                if(WebSocketService.clisitef == null){
-                    WebSocketService.clisitef = new CliSiTef(context,conn);
-                } else{
-                    WebSocketService.clisitef.setWebSocket(conn);
-                }
-
-                WebSocketService.clisitef.transaction(json);
-            }
-
-            if("continueTransaction".equals(activity)){
-                WebSocketService.clisitef.continueTransaction(json.getString("return"));
-            }
-
-            if("Scanner".equals(activity)){
-//                if(WebSocketService.scanner == null){
-                    WebSocketService.scanner = new Intent(context,Scanner.class);
-//                }
-
-                WebSocketService.scanner.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(WebSocketService.scanner);
+            switch(activity){
+                case "CliSiTef":
+                    handleCliSiTef(json,conn);
+                    break;
+                case "Printer":
+                    handlePrinter(json);
+                    break;
+                case "continueTransaction":
+                    handleContinueTransaction(json);
+                    break;
+                case "Scanner":
+                    handleScanner();
+                    break;
+                default:
+                    Log.w("WebSocket", "Atividade desconhecida: " + activity);
             }
         } catch(Exception e){
             Log.e("WebSocket", "Erro ao processar mensagem: " + e.getMessage());
@@ -111,6 +93,37 @@ public class MyWebSocketServer extends WebSocketServer{
                 this.start();
             } catch(Exception e){ e.printStackTrace(); }
         }).start();
+    }
+
+    private void handleCliSiTef(JSONObject json, WebSocket conn) throws JSONException {
+        if(WebSocketService.clisitef == null){
+            WebSocketService.clisitef = new CliSiTef(context,conn);
+        } else{
+            WebSocketService.clisitef.setWebSocket(conn);
+        }
+
+        WebSocketService.clisitef.transaction(json);
+    }
+
+    private void handlePrinter(JSONObject json) throws JSONException {
+        String image = json.optString("image");
+        byte[] imageBytes = Base64.decode(image,Base64.DEFAULT);
+        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+
+        if(bitmap != null){
+            Impressora impressora = new Impressora(context);
+            impressora.imprimirComprovante(bitmap);
+        }
+    }
+
+    private void handleContinueTransaction(JSONObject json) throws JSONException {
+        WebSocketService.clisitef.continueTransaction(json.getString("return"));
+    }
+
+    private void handleScanner() throws JSONException {
+        // WebSocketService.scanner = new Intent(context,Scanner.class);
+        // WebSocketService.scanner.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        // context.startActivity(WebSocketService.scanner);
     }
 }
 

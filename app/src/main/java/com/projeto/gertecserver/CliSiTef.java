@@ -261,11 +261,13 @@ public class CliSiTef implements ICliSiTefListener{
         }
 
         if(stage == 2 && resultCode == 0){
-            JSONObject jsonResponse = new JSONObject();
-            try {
-                jsonResponse.put("command", "getOrderInfo");
-                conn.send(jsonResponse.toString());
-            } catch(JSONException e){}
+            // Impressão
+
+            // JSONObject jsonResponse = new JSONObject();
+            // try {
+                // jsonResponse.put("command", "getOrderInfo");
+                // conn.send(jsonResponse.toString());
+            // } catch(JSONException e){}
         }
 
         if(resultCode != 0){

@@ -68,9 +68,9 @@ public class Impressora implements Printer.Listener {
             // printer.printXml(cupom);
 
             //Impressão imagem
-            printer.scrollPaper(2);
             Bitmap monochromaticBitmap = printerUtils.toMonochromatic(image,0.5);
             // printer.printImageAutoResize(monochromaticBitmap);
+            // printer.scrollPaper(3);
 
             printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
             MyWebSocketServer.cupom = "";
