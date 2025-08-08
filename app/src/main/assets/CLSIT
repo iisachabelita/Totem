@@ -1,113 +1,87 @@
-[CliSiTef]
-HabilitaTrace=0
-
-[CliSiTefI]
-HabilitaTrace=0
-
 [PinPad]
-HabilitaTrace=0
-HabilitaTraceStatusPinPad=0
-; Inicialização do pinpad com uma mensagem de até 16 caracteres
-; É possível quebrar em duas linhas, utilizando o separador '|'
+; Inicialização do pinpad com uma mensagem de até 16 caracteres. É possível quebrar em duas linhas, utilizando o separador '|'
 MensagemPadrao=
 
 [Geral]
-; 16 - Cartão de débito a vista
-; 20 - Cartão Refeição Eletrônico (Exceto Visanet, neste caso usar 3014)
-; 22 - Cartão Benefício
-; 23 - Cartão SmartVR/Sodexho com leitora SmartNet
-; 24 - Cartão de crédito a vista com juros
-; 26 - Cartão de crédito a vista
-; 27 - Cartão de crédito parcelado com financiamento do estabelecimento
-; 28 - Cartão de crédito parcelado com financiamento da administradora
-; 30 - Cartão de crédito magnético // tarja
-; 43 - Débito Magnético // tarja
-; 55 - Benefício
-; 3014 - Produtos de Vales da Cielo
-; 3192 - Vale Refeição (Exceto Visanet)
-; 3193 - Vale Alimentação (Exceto Visanet)
-TransacoesAdicionaisHabilitadas=16;20;22;23;24;26;27;28;30;43;55;3014;3192;3193
-PermiteDevolucaoCodigoAutorizacaoEstendido=1
+TransacoesHabilitadas=16;26;27;28
+TransacoesAdicionaisHabilitadas=20;22;3014;3192;3193
 IdentificaMensagens=1
 
 [SiTef]
+ConexaoObrigatoria=1
 MantemConexaoAtiva=1
-; Tempo máximo (s) para a tentativa inicial de conexão com o servidor
-TempoEsperaConexao=10
-; Tempo extra (s) de espera por respostas parciais ou intermediárias do servidor
-TempoAdicionalEspera=10
-; Tempo máximo (s) para tentar realizar o desfazimento de uma transação em caso de erro ou falha de comunicação antes da confirmação
-TempoEsperaDesfazimento=10
-; Tempo máximo (s) de espera pela confirmação da transação após a resposta do autorizador
-TempoEsperaConfirmacao=10
+TempoEsperaConexao=15 ; Tempo máximo (s) para a tentativa inicial de conexão com o servidor
+TempoAdicionalEspera=15 ; Tempo extra (s) de espera por respostas parciais ou intermediárias do servidor
+TempoEsperaDesfazimento=15 ; Tempo máximo (s) para tentar realizar o desfazimento de uma transação em caso de erro ou falha de comunicação antes da confirmação
+TempoEsperaConfirmacao=15 ; Tempo máximo (s) de espera pela confirmação da transação após a resposta do autorizador
 
 [TabTraducao]
 ; NomeArqTraducao=Mens.txt
 
 [Redes]
-; HabilitaRedeACSP=1
-; HabilitaRedeAlgorix=1
-; HabilitaRedeAvista=1
-; HabilitaRedeBancoIbi=1
-; HabilitaRedeBancoMercantil=1
-; HabilitaRedeBancoPanamericano=1
-; HabilitaRedeBancoProvincial=1
-; HabilitaRedeBOD=1
-; HabilitaRedeBODDebito=1
-; HabilitaRedeBrazilianCard=1
-; HabilitaRedeCdlPoa=1
-; HabilitaRedeCentralCard=1
-; HabilitaRedeCheckCheck=1
-; HabilitaRedeCisa=1
-; HabilitaRedeCitibank=1
-; HabilitaRedeClubCard=1
-; HabilitaRedeCompreMax=1
-; HabilitaRedeCondor=1
-; HabilitaRedeConsorcioVenezuela=1
-; HabilitaRedeConsultaValePapel=1
-; HabilitaRedeCooperCred=1
-; HabilitaRedeCredMais=1
-; HabilitaRedeCTF=1
-; HabilitaRedeDDTotal=1
-; HabilitaRedeDotz=1
-; HabilitaRedeEdenred=1
-; HabilitaRedeEdiguay=1
-; HabilitaRedeEletrozema=1
-; HabilitaRedeEMS=1
-; HabilitaRedeFidelize=1
-; HabilitaRedeFormosa=1
-; HabilitaRedeFoxWinCards=1
-; HabilitaRedeGivex=1
-; HabilitaRedeHiperlife=1
-; HabilitaRedeHotCard=1
-; HabilitaRedeICards=1
-; HabilitaRedeInfoCard=1
-; HabilitaRedeInComm=1
-; HabilitaRedeJGV=1
-; HabilitaRedeMAR=1
-; HabilitaRedeMettacard=1
-; HabilitaRedeNeus=1
-; HabilitaRedeOboe=1
+HabilitaRedeACSP=1
+HabilitaRedeAlgorix=1
+HabilitaRedeAvista=1
+HabilitaRedeBancoIbi=1
+HabilitaRedeBancoMercantil=1
+HabilitaRedeBancoPanamericano=1
+HabilitaRedeBancoProvincial=1
+HabilitaRedeBOD=1
+HabilitaRedeBODDebito=1
+HabilitaRedeBrazilianCard=1
+HabilitaRedeCdlPoa=1
+HabilitaRedeCentralCard=1
+HabilitaRedeCheckCheck=1
+HabilitaRedeCisa=1
+HabilitaRedeCitibank=1
+HabilitaRedeClubCard=1
+HabilitaRedeCompreMax=1
+HabilitaRedeCondor=1
+HabilitaRedeConsorcioVenezuela=1
+HabilitaRedeConsultaValePapel=1
+HabilitaRedeCooperCred=1
+HabilitaRedeCredMais=1
+HabilitaRedeCTF=1
+HabilitaRedeDDTotal=1
+HabilitaRedeDotz=1
+HabilitaRedeEdenred=1
+HabilitaRedeEdiguay=1
+HabilitaRedeEletrozema=1
+HabilitaRedeEMS=1
+HabilitaRedeFidelize=1
+HabilitaRedeFormosa=1
+HabilitaRedeFoxWinCards=1
+HabilitaRedeGivex=1
+HabilitaRedeHiperlife=1
+HabilitaRedeHotCard=1
+HabilitaRedeICards=1
+HabilitaRedeInfoCard=1
+HabilitaRedeInComm=1
+HabilitaRedeJGV=1
+HabilitaRedeMAR=1
+HabilitaRedeMettacard=1
+HabilitaRedeNeus=1
+HabilitaRedeOboe=1
 ; HabilitaRedeOmnion=1
-; HabilitaRedeOrbitall=1
-; HabilitaRedeParati=1
-; HabilitaRedePlatco=1
-; HabilitaRedePortalCard=1
+HabilitaRedeOrbitall=1
+HabilitaRedeParati=1
+HabilitaRedePlatco=1
+HabilitaRedePortalCard=1
 ; HabilitaRedeQualicard=1
-; HabilitaRedeRepom=1
-; HabilitaRedeSigaCred=1
-; HabilitaRedeSisCred=1
-; HabilitaRedeSoftway=1
-; HabilitaRedeSpcBrasil=1
-; HabilitaRedeSQCF=1
-; HabilitaRedeStarfiche=1
-; HabilitaRedeSysdata=1
-; HabilitaRedeTelecheque=1
-; HabilitaRedeTeledata=1
-; HabilitaRedeTopCard=1
-; HabilitaRedeTotal=1
-; HabilitaRedeTricard=1
-; HabilitaRedeUpSight=1
-; HabilitaRedeUseCred=1
-; HabilitaRedeValidata=1
-; HabilitaRedeWappa=1
+HabilitaRedeRepom=1
+HabilitaRedeSigaCred=1
+HabilitaRedeSisCred=1
+HabilitaRedeSoftway=1
+HabilitaRedeSpcBrasil=1
+HabilitaRedeSQCF=1
+HabilitaRedeStarfiche=1
+HabilitaRedeSysdata=1
+HabilitaRedeTelecheque=1
+HabilitaRedeTeledata=1
+HabilitaRedeTopCard=1
+HabilitaRedeTotal=1
+HabilitaRedeTricard=1
+HabilitaRedeUpSight=1
+HabilitaRedeUseCred=1
+HabilitaRedeValidata=1
+HabilitaRedeWappa=1

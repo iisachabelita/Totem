@@ -1,5 +1,7 @@
 package com.projeto.gertecserver;
 
+import static com.projeto.gertecserver.WebSocketService.clisitef;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
@@ -13,8 +15,6 @@ import java.net.InetSocketAddress;
 
 public class MyWebSocketServer extends WebSocketServer{
     private WebSocketService context;
-
-    public static boolean isConfigured = false;
     public static String cupom;
 
     public MyWebSocketServer(int port,WebSocketService context){
@@ -38,8 +38,11 @@ public class MyWebSocketServer extends WebSocketServer{
             String activity = json.optString("activity");
 
             switch(activity){
-                case "CliSiTef":
-                    handleCliSiTef(json,conn);
+                case "CliSiTefTransaction":
+                    handleCliSiTef("transaction",json,conn);
+                    break;
+                case "CliSiTefConfigure":
+                    handleCliSiTef("configure",json,conn);
                     break;
                 case "Printer":
                     handlePrinter(json);
@@ -50,8 +53,6 @@ public class MyWebSocketServer extends WebSocketServer{
                 case "Scanner":
                     handleScanner();
                     break;
-                default:
-                    Log.w("WebSocket", "Atividade desconhecida: " + activity);
             }
         } catch(Exception e){
             Log.e("WebSocket", "Erro ao processar mensagem: " + e.getMessage());
@@ -95,14 +96,25 @@ public class MyWebSocketServer extends WebSocketServer{
         }).start();
     }
 
-    private void handleCliSiTef(JSONObject json, WebSocket conn) throws JSONException {
-        if(WebSocketService.clisitef == null){
-            WebSocketService.clisitef = new CliSiTef(context,conn);
+    private void handleCliSiTef(String activity,JSONObject json,WebSocket conn) throws JSONException {
+        if(clisitef == null){
+            clisitef = new CliSiTef(context,conn);
         } else{
-            WebSocketService.clisitef.setWebSocket(conn);
+            clisitef.setWebSocket(conn);
         }
 
-        WebSocketService.clisitef.transaction(json);
+        switch(activity){
+            case "configure":
+                clisitef.configurarCliSiTef(json);
+                if(json.has("configurarEstabelecimento")){
+                    JSONObject config = json.optJSONObject("configurarEstabelecimento");
+                    clisitef.configurarEstabelecimento(config);
+                }
+                break;
+            case "transaction":
+                clisitef.transaction(json);
+                break;
+        }
     }
 
     private void handlePrinter(JSONObject json) throws JSONException {
@@ -117,7 +129,7 @@ public class MyWebSocketServer extends WebSocketServer{
     }
 
     private void handleContinueTransaction(JSONObject json) throws JSONException {
-        WebSocketService.clisitef.continueTransaction(json.getString("return"));
+        clisitef.continueTransaction(json.getString("return"));
     }
 
     private void handleScanner() throws JSONException {

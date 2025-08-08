@@ -38,7 +38,7 @@ public class CliSiTef implements ICliSiTefListener{
     private String credito;
     private int parcelas;
     private int retry = 0;
-    private String taxaServico;
+    private String taxa = "0";
     // private long abortStartTime = 0L;
     // private boolean abortHandlingActive;
 
@@ -50,48 +50,29 @@ public class CliSiTef implements ICliSiTefListener{
     public void setWebSocket(WebSocket newConn) {
         this.conn = newConn;
     }
-    public int configurarCliSiTef(JSONObject json){
-        String IPSiTef = json.optString("IPSiTef");
-        String IdLoja = json.optString("IdLoja");
-        String IdTerminal = json.optString("IdTerminal");
-//        String ParametrosAdicionais = "[TipoPinPad=ANDROID_USB;TipoComunicacaoExterna=SSL;]";
+    public void configurarCliSiTef(JSONObject parameters){
+        String IPSiTef = parameters.optString("IPSiTef");
+        String IdLoja = parameters.optString("IdLoja");
+        String IdTerminal = parameters.optString("IdTerminal");
+        // String ParametrosAdicionais = "[TipoPinPad=ANDROID_USB;TipoComunicacaoExterna=SSL;“CaminhoCertificadoCA=ca_cert.pem”;]";
         String ParametrosAdicionais = "[TipoPinPad=ANDROID_USB;]";
 
         int config = clisitef.configure(IPSiTef,IdLoja,IdTerminal,ParametrosAdicionais);
 
         if(config == 0){
-            MyWebSocketServer.isConfigured = true;
             Log.e("CliSiTef", "CliSiTef configurado com sucesso");
+            clisitef.loadTranslationFile("Mens.txt");
+            clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
         } else{
             Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
         }
-
-        return config;
     }
 
     public void configurarEstabelecimento(JSONObject json){
-        taxaServico = json.optString("taxaServico");
+        taxa = json.optString("taxa");
     }
 
-    public void transaction(JSONObject json){
-        if(!MyWebSocketServer.isConfigured){
-            int config = configurarCliSiTef(json);
-            if(config != 0){
-                try {
-                    JSONObject jsonResponse = new JSONObject();
-                    jsonResponse.put("status","erro ao configurar CliSiTef");
-                    conn.send(jsonResponse.toString());
-                } catch(JSONException e){}
-                return;
-            }
-        }
-
-        if(json.has("configurarEstabelecimento")){
-            JSONObject config = json.optJSONObject("configurarEstabelecimento");
-            configurarEstabelecimento(config);
-        }
-
-        JSONObject parameters = json.optJSONObject("parameters");
+    public void transaction(JSONObject parameters){
         modalidade = parameters.optInt("modalidade");
         valor = parameters.optString("valor");
         docFiscal = parameters.optString("docFiscal");
@@ -126,8 +107,8 @@ public class CliSiTef implements ICliSiTefListener{
     ){
         Log.e("CliSiTef", "onData, stage: " + stage + " command: " + command + " fieldId: " + fieldId + " minLength: " + minLength + " maxLength: " + maxLength + " input: " + new String(input));
 
-        if(clisitef.getBuffer().equals("13 - Operacao Cancelada?")){
-            command = 53;
+        if(new String(input).equals("13 - Operação Cancelada")){
+            clisitef.abortTransaction(-1);
         }
 
         if(stage == 1){
@@ -212,7 +193,7 @@ public class CliSiTef implements ICliSiTefListener{
                     case 504:
                         // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
 
-                        clisitef.continueTransaction(taxaServico);
+                        clisitef.continueTransaction(taxa);
                         return;
                 }
                 break;
@@ -225,7 +206,7 @@ public class CliSiTef implements ICliSiTefListener{
                 // } else{
                     // long elapsed = now - abortStartTime;
                     // if(elapsed >= 40000) { // 40 segundos
-                        // try { clisitef.finishTransaction(0); } catch(Exception e){} // Cancela
+                        // clisitef.abortTransaction(-1);
                         // abortHandlingActive = false;
                     // }
                 // }
