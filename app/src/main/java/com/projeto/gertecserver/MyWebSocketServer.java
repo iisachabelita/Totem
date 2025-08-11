@@ -9,6 +9,7 @@ import android.util.Log;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.net.InetSocketAddress;
@@ -119,12 +120,14 @@ public class MyWebSocketServer extends WebSocketServer{
 
     private void handlePrinter(JSONObject json) throws JSONException {
         String image = json.optString("image");
+        JSONObject parameters = json.optJSONObject("parameters");
+        JSONArray items = json.optJSONArray("items");
         byte[] imageBytes = Base64.decode(image,Base64.DEFAULT);
         Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
 
         if(bitmap != null){
             Impressora impressora = new Impressora(context);
-            impressora.imprimirComprovante(bitmap);
+            impressora.imprimirComprovante(bitmap,items,parameters);
         }
     }
 
