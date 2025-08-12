@@ -236,18 +236,18 @@ public class CliSiTef implements ICliSiTefListener{
         if(stage == 1 && resultCode == 0){
             try {
                 clisitef.finishTransaction(1);
+
+                // Impressão
+                JSONObject jsonResponse = new JSONObject();
+                jsonResponse.put("command", "getOrderInfo");
+                conn.send(jsonResponse.toString());
             } catch(Exception e){
                 throw new RuntimeException("Erro ao finalizar transação: " + e.getMessage());
             }
         }
 
         if(stage == 2 && resultCode == 0){
-            // Impressão
-             JSONObject jsonResponse = new JSONObject();
-             try {
-                 jsonResponse.put("command", "getOrderInfo");
-                 conn.send(jsonResponse.toString());
-             } catch(JSONException e){}
+            // Redirect
         }
 
         if(resultCode != 0){

@@ -14,6 +14,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import java.net.InetSocketAddress;
 
+import br.com.gertec.easylayer.printer.PrinterException;
+
 public class MyWebSocketServer extends WebSocketServer{
     private WebSocketService context;
     public static String cupom;
@@ -118,7 +120,7 @@ public class MyWebSocketServer extends WebSocketServer{
         }
     }
 
-    private void handlePrinter(JSONObject json) throws JSONException {
+    private void handlePrinter(JSONObject json) throws JSONException, PrinterException {
         String image = json.optString("image");
         JSONObject parameters = json.optJSONObject("parameters");
         JSONArray items = json.optJSONArray("items");
