@@ -66,16 +66,26 @@ public class Impressora implements Printer.Listener {
             printConfig.setHeight(100);
             printConfig.setAlignment(CENTER);
             printer.printImage(printConfig,image);
+            printer.scrollPaper(1);
 
             // Cabeçalho
-            printFormat(parameters.optString("nameFantasy"),LEFT);
-            printFormat(parameters.optString("reasonSocial"),LEFT);
-            printFormat(parameters.optString("adressRef"),LEFT);
-            printFormat("Pagamento: " + parameters.optString("paymentType"),LEFT);
-            printFormat("Razão Social/Nome: " + parameters.optString("nameUser"),LEFT);
+            printFormat("Senha:",CENTER,false);
+            TextFormat textFormat = new TextFormat();
+            textFormat.setBold(true);
+            textFormat.setFontSize(50);
+            textFormat.setLineSpacing(3);
+            textFormat.setAlignment(CENTER);
+            printer.printText(textFormat,parameters.optString("orderRef"));
+
+            printFormat("Hash do pedido: " + parameters.optString("orderHash"),LEFT,false);
+            printFormat(parameters.optString("nameFantasy"),LEFT,false);
+            printFormat(parameters.optString("reasonSocial"),LEFT,false);
+            printFormat(parameters.optString("adressRef"),LEFT,false);
+            printFormat("Pagamento: " + parameters.optString("paymentType"),LEFT,false);
+            printFormat("Razão Social/Nome: " + parameters.optString("nameUser"),LEFT,false);
             String cpfCnpjUser = parameters.optString("cpfCnpjUser");
-            printFormat((cpfCnpjUser != null && !cpfCnpjUser.isEmpty()) ? "CPF/CNPJ: " + cpfCnpjUser : "",LEFT);
-            printFormat(parameters.optString("orderConsume"),LEFT);
+            printFormat((cpfCnpjUser != null && !cpfCnpjUser.isEmpty()) ? "CPF/CNPJ: " + cpfCnpjUser : "",LEFT,false);
+            printFormat(parameters.optString("orderConsume"),LEFT,false);
 
             // Separador
             PrintConfig lineConfig = new PrintConfig();
@@ -92,9 +102,9 @@ public class Impressora implements Printer.Listener {
                     String quantidade = item.getString("ite_quantidade");
 
                     printFormat(formatLine(
-                        (quantidade != null && !quantidade.isEmpty() && Integer.parseInt(quantidade) > 1) ? quantidade + "x " + titulo : titulo,
-                        (preco != null && preco > 0) ? "R$ " + String.valueOf(preco) : ""
-                    ),LEFT);
+                        (quantidade != null && !quantidade.isEmpty()) ? quantidade + "x " + titulo : titulo,
+                        (preco != null && preco > 0) ? "R$ " + String.format("%.2f", preco) : ""
+                    ),LEFT,false);
 
                     if(item.has("perguntas")){
                         JSONArray perguntas = item.getJSONArray("perguntas");
@@ -105,9 +115,9 @@ public class Impressora implements Printer.Listener {
 
                             if(pergunta.has("resposta") && !pergunta.isNull("resposta")){
                                 JSONObject respostaObj = pergunta.getJSONObject("resposta");
-                                 String resposta = respostaObj.getString("res_titulo");
+                                String title = respostaObj.getString("res_titulo");
 
-                                printFormat(" - " + label + ": " + resposta,LEFT);
+                                printFormat("- " + label + ": " + title,LEFT,false);
                             }
 
                             if(pergunta.has("respostas") && !pergunta.isNull("respostas")){
@@ -118,7 +128,7 @@ public class Impressora implements Printer.Listener {
                                     String title = respostaObj.getString("res_titulo");
                                     String qntd = respostaObj.getString("res_quantidade");
 
-                                    printFormat((qntd != null && !qntd.isEmpty() && Integer.parseInt(qntd) > 1) ? " - " + qntd + "x " + title : " - " + title,LEFT);
+                                    printFormat((qntd != null && !qntd.isEmpty() && Integer.parseInt(qntd) > 1) ? "- " + qntd + "x " + title : "- " + title,LEFT,false);
                                 }
                             }
                         }
@@ -128,13 +138,13 @@ public class Impressora implements Printer.Listener {
             } catch(JSONException e){}
 
             String obs = parameters.optString("observText");
-            printFormat((obs != null && !obs.isEmpty()) ? "Obs: " + obs : "",LEFT);
+            printFormat((obs != null && !obs.isEmpty()) ? "Obs: " + obs : "",LEFT,false);
 
             // Separador
             printer.printImage(lineConfig,createLineSeparator());
 
-            printFormat(formatLine("TOTAL","R$ " + parameters.optString("valueTotal")),LEFT);
-            printFormat(new SimpleDateFormat("dd/MM/yyyy - HH:mm:ss").format(new Date()),CENTER);
+            printFormat(formatLine("TOTAL","R$ " + parameters.optString("valueTotal")),LEFT,true);
+            printFormat(new SimpleDateFormat("dd/MM/yyyy - HH:mm:ss").format(new Date()),CENTER,false);
 
             printer.scrollPaper(1);
             printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
@@ -186,20 +196,20 @@ public class Impressora implements Printer.Listener {
 //        } catch(PrinterException e){}
     }
 
-    private void printFormat(String s, Alignment alignment) throws PrinterException{
+    private void printFormat(String s, Alignment alignment, Boolean bold) throws PrinterException{
         if(s != null && !s.isEmpty()){
             TextFormat textFormat = new TextFormat();
-            textFormat.setBold(true);
+            textFormat.setBold(bold);
             textFormat.setUnderscore(false);
             textFormat.setFontSize(20);
-            textFormat.setLineSpacing(4);
+            textFormat.setLineSpacing(3);
             textFormat.setAlignment(alignment);
             printer.printText(textFormat,s);
         }
     }
 
     private String formatLine(String var1,String var2){
-        int width = 52;
+        int width = 32;
 
         if(var1.length() + var2.length() >= width){
             return var1 + " " + var2;
@@ -214,120 +224,6 @@ public class Impressora implements Printer.Listener {
         sb.append(var2);
         return sb.toString();
     }
-
-//    private String formatLine(String var1,String var2){
-//        TextPaint textPaint = new TextPaint();
-//        textPaint.setAntiAlias(true);
-//        textPaint.setFakeBoldText(true);
-//        textPaint.setUnderlineText(false);
-//        textPaint.setTextSize((float)20);
-//        textPaint.setTextAlign(Paint.Align.CENTER);
-//
-//        float leftWidth = textPaint.measureText(var1);
-//        float rightWidth = textPaint.measureText(var2);
-//        float textWidth = leftWidth + rightWidth;
-//
-//        if (textWidth <= (float)MAX_PRINT_WIDTH){
-//            return var1 + " " + var2;
-//
-//            bitmap = Bitmap.createBitmap(MAX_PRINT_WIDTH, (int)textPaint.getFontSpacing(), Config.ARGB_8888);
-//            Canvas canvas = new Canvas(bitmap);
-//            canvas.drawColor(-1);
-//            float x;
-//            if (textPaint.getTextAlign() == Align.LEFT) {
-//                x = 0.0F;
-//            } else if (textPaint.getTextAlign() == Align.CENTER) {
-//                x = (float)((double)MAX_PRINT_WIDTH * 0.5D);
-//            } else {
-//                x = (float)MAX_PRINT_WIDTH;
-//            }
-//
-//            canvas.drawText(text, x, textPaint.getFontSpacing(), textPaint);
-//        } else{
-//            List<String> textLines = new ArrayList();
-//            String[] words = text.split("\\s+");
-//            int lineStart = 0;
-//            int lineWidth = 0;
-//            int endIndex = 0;
-//
-//            while(true) {
-//                while(endIndex < words.length) {
-//                    String word = words[endIndex];
-//                    float wordWidth = textPaint.measureText(word);
-//                    if ((float)lineWidth + wordWidth <= (float)MAX_PRINT_WIDTH) {
-//                        lineWidth = (int)((float)lineWidth + wordWidth + textPaint.measureText(" "));
-//                        ++endIndex;
-//                    } else {
-//                        StringBuilder lineBuilder = new StringBuilder();
-//
-//                        for(int i = lineStart; i < endIndex; ++i) {
-//                            lineBuilder.append(words[i]).append(" ");
-//                        }
-//
-//                        textLines.add(lineBuilder.toString().trim());
-//                        lineStart = endIndex;
-//                        lineWidth = 0;
-//                    }
-//                }
-//
-//                int i;
-//                if (lineStart < endIndex) {
-//                    StringBuilder lastLineBuilder = new StringBuilder();
-//
-//                    for(i = lineStart; i < endIndex; ++i) {
-//                        lastLineBuilder.append(words[i]).append(" ");
-//                    }
-//
-//                    textLines.add(lastLineBuilder.toString().trim());
-//                }
-//
-//                int lineHeight = (int)textPaint.getFontSpacing();
-//                i = lineHeight * textLines.size();
-//                bitmap = Bitmap.createBitmap(MAX_PRINT_WIDTH, i, Config.ARGB_8888);
-//                float x = 0.0F;
-//                Canvas canvas = new Canvas(bitmap);
-//                canvas.drawColor(-1);
-//                float y = (float)lineHeight;
-//
-//                for(Iterator var18 = textLines.iterator(); var18.hasNext(); y += (float)lineHeight) {
-//                    String line = (String)var18.next();
-//                    if (line.length() < MAX_PRINT_WIDTH) {
-//                        if (textPaint.getTextAlign() == Align.LEFT) {
-//                            x = 0.0F;
-//                        } else if (textPaint.getTextAlign() == Align.CENTER) {
-//                            x = (float)((double)MAX_PRINT_WIDTH * 0.5D);
-//                        } else {
-//                            x = (float)MAX_PRINT_WIDTH;
-//                        }
-//                    }
-//
-//                    canvas.drawText(line, x, y, textPaint);
-//                }
-//                break;
-//            }
-//        }
-//
-//
-//
-//
-////        float spaceWidth = textPaint.measureText(" ");
-////
-////        float availableSpacePx = MAX_PRINT_WIDTH - (leftWidth + rightWidth);
-////
-////        if(availableSpacePx <= spaceWidth){
-////            return var1 + " " + var2;
-////        }
-////
-////        int spaceCount = Math.round(availableSpacePx / spaceWidth);
-////
-////        StringBuilder sb = new StringBuilder(var1);
-////        for(int i = 0; i < spaceCount; i++){
-////            sb.append(" ");
-////        }
-////        sb.append(var2);
-////
-////        return sb.toString();
-//    }
 
     private static Bitmap createLineSeparator(){
         int height = 3;
