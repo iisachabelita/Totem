@@ -60,7 +60,7 @@ public class Impressora implements Printer.Listener {
 
     public void imprimirComprovante(Bitmap image, JSONArray items, JSONObject parameters) throws PrinterException {
         try {
-            //Impressão imagem
+            // Logo do estabelecimento
             PrintConfig printConfig = new PrintConfig();
             printConfig.setWidth(100);
             printConfig.setHeight(100);
@@ -68,32 +68,42 @@ public class Impressora implements Printer.Listener {
             printer.printImage(printConfig,image);
             printer.scrollPaper(1);
 
-            // Cabeçalho
-            printFormat("Senha:",CENTER,false);
-            TextFormat textFormat = new TextFormat();
-            textFormat.setBold(true);
-            textFormat.setFontSize(50);
-            textFormat.setLineSpacing(3);
-            textFormat.setAlignment(CENTER);
-            printer.printText(textFormat,parameters.optString("orderRef"));
-
-            printFormat("Hash do pedido: " + parameters.optString("orderHash"),LEFT,false);
-            printFormat(parameters.optString("nameFantasy"),LEFT,false);
-            printFormat(parameters.optString("reasonSocial"),LEFT,false);
-            printFormat(parameters.optString("adressRef"),LEFT,false);
-            printFormat("Pagamento: " + parameters.optString("paymentType"),LEFT,false);
-            printFormat("Razão Social/Nome: " + parameters.optString("nameUser"),LEFT,false);
-            String cpfCnpjUser = parameters.optString("cpfCnpjUser");
-            printFormat((cpfCnpjUser != null && !cpfCnpjUser.isEmpty()) ? "CPF/CNPJ: " + cpfCnpjUser : "",LEFT,false);
-            printFormat(parameters.optString("orderConsume"),LEFT,false);
-
             // Separador
             PrintConfig lineConfig = new PrintConfig();
             lineConfig.setAlignment(Alignment.CENTER);
             printer.printImage(lineConfig,createLineSeparator());
 
+            printFormat(parameters.optString("orderConsume"),LEFT,false);
+
+            // Separador
+            printer.printImage(lineConfig,createLineSeparator());
+
+            printFormat("Senha: ",CENTER,false);
+            TextFormat textFormat = new TextFormat();
+            textFormat.setBold(true);
+            textFormat.setFontSize(50);
+            textFormat.setLineSpacing(1);
+            textFormat.setAlignment(CENTER);
+            printer.printText(textFormat,parameters.optString("orderRef"));
+
+            // Separador
+            printer.printImage(lineConfig,createLineSeparator());
+
+            printFormat(parameters.optString("nameFantasy"),LEFT,false);
+            printFormat(parameters.optString("reasonSocial"),LEFT,false);
+            printer.printImage(lineConfig,createLineSpace());
+            printFormat(parameters.optString("adressRef"),LEFT,false);
+            printer.printImage(lineConfig,createLineSpace());
+            printFormat(parameters.optString("orderHash"),LEFT,false);
+
+            // Separador
+            printer.printImage(lineConfig,createLineSeparator());
+
             // Itens
             try {
+                printFormat("Itens", LEFT, false);
+                printer.printImage(lineConfig,createLineSpace());
+
                 for(int i = 0; i < items.length(); i++){
                     JSONObject item = items.getJSONObject(i);
 
@@ -133,17 +143,32 @@ public class Impressora implements Printer.Listener {
                             }
                         }
                     }
-
                 }
             } catch(JSONException e){}
 
             String obs = parameters.optString("observText");
-            printFormat((obs != null && !obs.isEmpty()) ? "Obs: " + obs : "",LEFT,false);
+            if(obs != null && !obs.isEmpty()){
+                printFormat(obs, LEFT, false);
+                printer.printImage(lineConfig,createLineSpace());
+            }
 
             // Separador
             printer.printImage(lineConfig,createLineSeparator());
 
-            printFormat(formatLine("TOTAL","R$ " + parameters.optString("valueTotal")),LEFT,true);
+            printFormat(parameters.optString("nameUser"),LEFT,false);
+            printFormat(parameters.optString("cpfCnpjUser"),LEFT,false);
+
+            // Separador
+            printer.printImage(lineConfig,createLineSeparator());
+
+            printFormat(parameters.optString("paymentType"),LEFT,false);
+            printFormat(formatLine("Sub-total",parameters.optString("valueSubtotal")),LEFT,false);
+            printFormat(formatLine("Desconto",parameters.optString("valueDiscount")),LEFT,false);
+            printFormat(formatLine("Taxa pagto.",parameters.optString("valueFee")),LEFT,false);
+            printFormat(formatLine("Total",parameters.optString("valueTotal")),LEFT,true);
+
+            // Separador
+            printer.printImage(lineConfig,createLineSeparator());
             printFormat(new SimpleDateFormat("dd/MM/yyyy - HH:mm:ss").format(new Date()),CENTER,false);
 
             printer.scrollPaper(1);
@@ -198,13 +223,47 @@ public class Impressora implements Printer.Listener {
 
     private void printFormat(String s, Alignment alignment, Boolean bold) throws PrinterException{
         if(s != null && !s.isEmpty()){
-            TextFormat textFormat = new TextFormat();
-            textFormat.setBold(bold);
-            textFormat.setUnderscore(false);
-            textFormat.setFontSize(20);
-            textFormat.setLineSpacing(3);
-            textFormat.setAlignment(alignment);
-            printer.printText(textFormat,s);
+            final int MAX_CHARS = 32;
+
+            List<String> linhas = new ArrayList<>();
+
+            // Tratativa para quebra de linha
+            if(s.length() > MAX_CHARS){
+                // Evitando cortar palavras
+                String[] palavras = s.split(" ");
+                StringBuilder linhaAtual = new StringBuilder();
+
+                for(String palavra : palavras){
+                    // Se adicionar essa palavra passar do limite, salva linha e começa outra
+                    if(linhaAtual.length() > 0 && (linhaAtual.length() + 1 + palavra.length()) > MAX_CHARS){
+                        linhas.add(linhaAtual.toString());
+                        linhaAtual = new StringBuilder();
+                    }
+
+                    if(linhaAtual.length() > 0){
+                        linhaAtual.append(" ");
+                    }
+                    linhaAtual.append(palavra);
+                }
+
+                // Adiciona a última linha se sobrar algo
+                if(linhaAtual.length() > 0){
+                    linhas.add(linhaAtual.toString());
+                }
+            }else{
+                linhas.add(s);
+            }
+
+            for(String linha : linhas){
+                TextFormat textFormat = new TextFormat();
+                textFormat.setBold(bold);
+                textFormat.setUnderscore(false);
+                textFormat.setFontSize(20);
+                textFormat.setLineSpacing(1);
+                textFormat.setAlignment(alignment);
+
+                printer.printText(textFormat,linha);
+            }
         }
     }
 
@@ -226,7 +285,7 @@ public class Impressora implements Printer.Listener {
     }
 
     private static Bitmap createLineSeparator(){
-        int height = 3;
+        int height = 2;
 
         // Bitmap mutável
         Bitmap bitmap = Bitmap.createBitmap(MAX_PRINT_WIDTH,height,Bitmap.Config.ARGB_8888);
@@ -237,6 +296,25 @@ public class Impressora implements Printer.Listener {
         // Paint para desenhar a linha
         Paint paint = new Paint();
         paint.setColor(Color.BLACK);
+        paint.setStyle(Paint.Style.FILL);
+
+        // Retângulo que representa a linha: left, top, right, bottom, paint
+        canvas.drawRect(0f, 0f,MAX_PRINT_WIDTH,height,paint);
+
+        return bitmap;
+    }
+    private static Bitmap createLineSpace(){
+        int height = 10;
+
+        // Bitmap mutável
+        Bitmap bitmap = Bitmap.createBitmap(MAX_PRINT_WIDTH,height,Bitmap.Config.ARGB_8888);
+
+        // Canvas para desenhar no Bitmap
+        Canvas canvas = new Canvas(bitmap);
+
+        // Paint para desenhar a linha
+        Paint paint = new Paint();
+        paint.setColor(Color.TRANSPARENT);
         paint.setStyle(Paint.Style.FILL);
 
         // Retângulo que representa a linha: left, top, right, bottom, paint
