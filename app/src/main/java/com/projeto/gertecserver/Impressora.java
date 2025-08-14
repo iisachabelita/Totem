@@ -82,7 +82,7 @@ public class Impressora implements Printer.Listener {
             TextFormat textFormat = new TextFormat();
             textFormat.setBold(true);
             textFormat.setFontSize(50);
-            textFormat.setLineSpacing(1);
+            textFormat.setLineSpacing(-5);
             textFormat.setAlignment(CENTER);
             printer.printText(textFormat,parameters.optString("orderRef"));
 
@@ -259,7 +259,7 @@ public class Impressora implements Printer.Listener {
                 textFormat.setBold(bold);
                 textFormat.setUnderscore(false);
                 textFormat.setFontSize(20);
-                textFormat.setLineSpacing(1);
+                textFormat.setLineSpacing(-5);
                 textFormat.setAlignment(alignment);
 
                 printer.printText(textFormat,linha);
@@ -304,7 +304,7 @@ public class Impressora implements Printer.Listener {
         return bitmap;
     }
     private static Bitmap createLineSpace(){
-        int height = 10;
+        int height = 15;
 
         // Bitmap mutável
         Bitmap bitmap = Bitmap.createBitmap(MAX_PRINT_WIDTH,height,Bitmap.Config.ARGB_8888);
