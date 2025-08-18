@@ -9,19 +9,15 @@ import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_MENU_OPTION;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_PRESS_ANY_KEY;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_RESULT_DATA;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER_CUSTOMER;
-
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-
 import org.java_websocket.WebSocket;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
 import br.com.softwareexpress.sitef.android.ICliSiTefListener;
 
 public class CliSiTef implements ICliSiTefListener{
@@ -35,12 +31,10 @@ public class CliSiTef implements ICliSiTefListener{
     private String horaFiscal;
     private String operador;
     private String restricoes;
-    private String credito;
-    private int parcelas;
     private int retry = 0;
-    private String taxa = "0";
-    // private long abortStartTime = 0L;
-    // private boolean abortHandlingActive;
+
+    private boolean configureCliSiTef = false;
+    public boolean finishTransaction;
 
     public CliSiTef(Context context,WebSocket conn){
         this.context = context.getApplicationContext();
@@ -50,7 +44,7 @@ public class CliSiTef implements ICliSiTefListener{
     public void setWebSocket(WebSocket newConn) {
         this.conn = newConn;
     }
-    public void configurarCliSiTef(JSONObject parameters){
+    private int configurarCliSiTef(JSONObject parameters){
         String IPSiTef = parameters.optString("IPSiTef");
         String IdLoja = parameters.optString("IdLoja");
         String IdTerminal = parameters.optString("IdTerminal");
@@ -59,20 +53,22 @@ public class CliSiTef implements ICliSiTefListener{
 
         int config = clisitef.configure(IPSiTef,IdLoja,IdTerminal,ParametrosAdicionais);
 
-        if(config == 0){
-            Log.e("CliSiTef", "CliSiTef configurado com sucesso");
-            clisitef.loadTranslationFile("Mens.txt");
-            clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
-        } else{
-            Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
-        }
-    }
-
-    public void configurarEstabelecimento(JSONObject json){
-        taxa = json.optString("taxa");
+        return config;
     }
 
     public void transaction(JSONObject parameters){
+        if(!configureCliSiTef){
+            int config = configurarCliSiTef(parameters);
+
+            if(config == 0){
+                Log.e("CliSiTef", "CliSiTef configurado com sucesso");
+            } else{
+                Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
+            }
+        }
+
+        clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
+
         modalidade = parameters.optInt("modalidade");
         valor = parameters.optString("valor");
         docFiscal = parameters.optString("docFiscal");
@@ -81,12 +77,8 @@ public class CliSiTef implements ICliSiTefListener{
         operador = parameters.optString("operador");
         restricoes = parameters.optString("restricoes","");
 
-        // Tratativa para modalidade de crédito parcelado
-        credito = parameters.optString( "credito");
-        parcelas = parameters.optInt("parcelas");
-
         retry = 0;
-        // abortHandlingActive = false;
+        finishTransaction = false;
 
         int pendingMessages = clisitef.submitPendingMessages();
 
@@ -114,27 +106,10 @@ public class CliSiTef implements ICliSiTefListener{
         if(stage == 1){
             switch(command){
                 case CMD_GET_MENU_OPTION: // 21
-                    // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
-
-                    switch(modalidade){
-                        case 2: // Débito
-                            clisitef.continueTransaction("1"); // À vista
-                            return;
-                        case 3: // Crédito
-                            // À vista
-                            if(parcelas == 1){
-                                clisitef.continueTransaction("1");
-                            } else{
-                                // Parcelado
-                                // 2 - pelo estabelecimento
-                                // 3 - pela administradora
-                                clisitef.continueTransaction(credito);
-                            }
-                            return;
-                    }
+                    // Débito e Crédito à vista
+                    clisitef.continueTransaction("1");
+                    return;
                 case CMD_CONFIRMATION:// 20
-                    // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
-
                     // Erro leitura do cartão
                     String confirm;
 
@@ -155,23 +130,6 @@ public class CliSiTef implements ICliSiTefListener{
                         clisitef.continueTransaction(confirm),5000 // 5 segundos
                     );
                     return;
-                case CMD_GET_FIELD: // 30
-                    // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
-
-                    switch(fieldId){
-                        case 505: // Número de parcelas (DEVE SER > 1)
-                            // try {
-                                // JSONObject jsonResponse = new JSONObject();
-                                // jsonResponse.put("message",new String(input));
-                                // // jsonResponse.put("minLength",minLength); // está ignorando
-                                // // jsonResponse.put("maxLength",maxLength); // está ignorando
-                                // conn.send(jsonResponse.toString());
-                            // } catch(JSONException e){}
-
-                            continueTransaction(String.valueOf(parcelas));
-                            break;
-                    }
-                     return;
             case CMD_PRESS_ANY_KEY: // 22
             case CMD_SHOW_MSG_CASHIER_CUSTOMER: // 3
                 try {
@@ -191,25 +149,11 @@ public class CliSiTef implements ICliSiTefListener{
                 // Valor monetário
                 switch(fieldId){
                     case 504:
-                        // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
-
-                        clisitef.continueTransaction(taxa);
+                        clisitef.continueTransaction("0");
                         return;
                 }
                 break;
             case CMD_ABORT_REQUEST: // 23
-                // long now = System.currentTimeMillis();
-
-                // if(!abortHandlingActive){
-                    // abortStartTime = now;
-                    // abortHandlingActive = true;
-                // } else{
-                    // long elapsed = now - abortStartTime;
-                    // if(elapsed >= 40000) { // 40 segundos
-                        // clisitef.abortTransaction(-1);
-                        // abortHandlingActive = false;
-                    // }
-                // }
                 break;
             case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
                 // Limpa mensagem enviada pelo CMD_PRESS_ANY_KEY & CMD_SHOW_MSG_CASHIER_CUSTOMER
@@ -220,8 +164,6 @@ public class CliSiTef implements ICliSiTefListener{
                 } catch(JSONException e){}
             }
         }
-
-        // if(command != CMD_ABORT_REQUEST && abortHandlingActive){ abortHandlingActive = false; }
         clisitef.continueTransaction("");
     }
 
@@ -236,26 +178,25 @@ public class CliSiTef implements ICliSiTefListener{
         if(stage == 1 && resultCode == 0){
             try {
                 clisitef.finishTransaction(1);
-
-                // Impressão
-                JSONObject jsonResponse = new JSONObject();
-                jsonResponse.put("command", "getOrderInfo");
-                conn.send(jsonResponse.toString());
-            } catch(Exception e){
-                throw new RuntimeException("Erro ao finalizar transação: " + e.getMessage());
-            }
+                finishTransaction = true;
+            } catch(Exception e){ throw new RuntimeException(e); }
         }
 
         if(stage == 2 && resultCode == 0){
-            // Redirect
+             if(finishTransaction){
+                 try {
+                     // Impressão
+                     JSONObject jsonResponse = new JSONObject();
+                     jsonResponse.put("command", "getOrderInfo");
+                     conn.send(jsonResponse.toString());
+                 } catch(Exception e){ throw new RuntimeException(e); }
+             }
         }
 
         if(resultCode != 0){
             JSONObject jsonResponse = new JSONObject();
             try {
-                jsonResponse.put("status", "erro");
-                jsonResponse.put("codigo",resultCode);
-                jsonResponse.put("mensagem",clisitef.getBuffer());
+                jsonResponse.put("message","erro: " + resultCode + " " + clisitef.getBuffer());
                 conn.send(jsonResponse.toString());
             } catch(JSONException e){}
         }

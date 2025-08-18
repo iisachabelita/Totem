@@ -1,7 +1,5 @@
 package com.projeto.gertecserver;
 
-import static com.projeto.gertecserver.MyWebSocketServer.cupom;
-
 import static br.com.gertec.easylayer.printer.Alignment.CENTER;
 import static br.com.gertec.easylayer.printer.Alignment.LEFT;
 
@@ -9,22 +7,15 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.text.TextPaint;
 import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 
 import br.com.gertec.easylayer.printer.Alignment;
 import br.com.gertec.easylayer.printer.CutType;
@@ -58,7 +49,10 @@ public class Impressora implements Printer.Listener {
         printer.setPrinterOrientation(OrientationType.DEFAULT);
     }
 
-    public void imprimirComprovante(Bitmap image, JSONArray items, JSONObject parameters) throws PrinterException {
+    // Apenas para testes
+    public void imprimirComprovante(Bitmap image, JSONArray items, JSONObject parameters){}
+
+    public void imprimirComprovante_(Bitmap image, JSONArray items, JSONObject parameters) throws PrinterException {
         try {
             // Logo do estabelecimento
             PrintConfig printConfig = new PrintConfig();
@@ -174,51 +168,6 @@ public class Impressora implements Printer.Listener {
             printer.scrollPaper(1);
             printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
         } catch(PrinterException e){}
-
-//        try {
-//             if(MyWebSocketServer.cupom.trim().isEmpty()){
-//                MyWebSocketServer.cupom = "Lorem Ipsum is simply dummy text of th...";
-//             }
-//
-//             // Divide por linha
-//            String[] linhas = MyWebSocketServer.cupom.split("\n");
-//            List<String> linhasList = Arrays.asList(linhas);
-//            // Inverte
-//            Collections.reverse(linhasList);
-//
-//            // Verifica o tamanho da maior linha
-//            int maxLen = linhasList.stream().mapToInt(String::length).max().orElse(0);
-//
-//            // Define tamanho da fonte baseado na maior linha
-//            int fontSize = maxLen <= 32 ? 30 :
-//                            maxLen <= 36 ? 26 :
-//                            maxLen <= 42 ? 22 :
-//                            maxLen <= 48 ? 18 : 16;
-//
-//            // Configuração base de formatação
-//            TextFormat format = new TextFormat();
-//            format.setBold(true);
-//            format.setUnderscore(false);
-//            format.setFontSize(fontSize);
-//            format.setAlignment(Alignment.LEFT);
-//            format.setLineSpacing(4);
-//
-//            for(String linha : linhasList){
-//                printer.printText(format,linha);
-//            }
-//
-//            //Imprimir cupom
-//              Receipt cupom = new Receipt();
-//            // printer.printXml(cupom);
-//
-//            //Impressão imagem
-//            Bitmap monochromaticBitmap = printerUtils.toMonochromatic(image,0.5);
-//            // printer.printImageAutoResize(monochromaticBitmap);
-//            // printer.scrollPaper(3);
-//
-//            printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
-//            MyWebSocketServer.cupom = "";
-//        } catch(PrinterException e){}
     }
 
     private void printFormat(String s, Alignment alignment, Boolean bold) throws PrinterException{
@@ -303,6 +252,7 @@ public class Impressora implements Printer.Listener {
 
         return bitmap;
     }
+
     private static Bitmap createLineSpace(){
         int height = 15;
 

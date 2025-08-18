@@ -29,7 +29,7 @@ public class MyWebSocketServer extends WebSocketServer{
     public void onOpen(WebSocket conn,ClientHandshake handshake){
         try {
             JSONObject jsonResponse = new JSONObject();
-            jsonResponse.put("status","cliente conectado");
+            jsonResponse.put("message","Aguardando inicio da transação");
             conn.send(jsonResponse.toString());
         } catch(JSONException e){}
     }
@@ -41,20 +41,11 @@ public class MyWebSocketServer extends WebSocketServer{
             String activity = json.optString("activity");
 
             switch(activity){
-                case "CliSiTefTransaction":
-                    handleCliSiTef("transaction",json,conn);
+                case "transaction":
+                    handleTransaction(json,conn);
                     break;
-                case "CliSiTefConfigure":
-                    handleCliSiTef("configure",json,conn);
-                    break;
-                case "Printer":
+                case "printer":
                     handlePrinter(json);
-                    break;
-                case "continueTransaction":
-                    handleContinueTransaction(json);
-                    break;
-                case "Scanner":
-                    handleScanner();
                     break;
             }
         } catch(Exception e){
@@ -74,8 +65,7 @@ public class MyWebSocketServer extends WebSocketServer{
         if(conn != null && conn.isOpen()){
             try {
                 JSONObject jsonResponse = new JSONObject();
-                jsonResponse.put("status", "erro");
-                jsonResponse.put("mensagem", ex.getMessage());
+                jsonResponse.put("message", ex.getMessage());
                 conn.send(jsonResponse.toString());
             } catch(JSONException e){}
         }
@@ -99,25 +89,14 @@ public class MyWebSocketServer extends WebSocketServer{
         }).start();
     }
 
-    private void handleCliSiTef(String activity,JSONObject json,WebSocket conn) throws JSONException {
+    private void handleTransaction(JSONObject json,WebSocket conn) throws JSONException {
         if(clisitef == null){
             clisitef = new CliSiTef(context,conn);
         } else{
             clisitef.setWebSocket(conn);
         }
 
-        switch(activity){
-            case "configure":
-                clisitef.configurarCliSiTef(json);
-                if(json.has("configurarEstabelecimento")){
-                    JSONObject config = json.optJSONObject("configurarEstabelecimento");
-                    clisitef.configurarEstabelecimento(config);
-                }
-                break;
-            case "transaction":
-                clisitef.transaction(json);
-                break;
-        }
+        clisitef.transaction(json);
     }
 
     private void handlePrinter(JSONObject json) throws JSONException, PrinterException {
@@ -131,10 +110,6 @@ public class MyWebSocketServer extends WebSocketServer{
             Impressora impressora = new Impressora(context);
             impressora.imprimirComprovante(bitmap,items,parameters);
         }
-    }
-
-    private void handleContinueTransaction(JSONObject json) throws JSONException {
-        clisitef.continueTransaction(json.getString("return"));
     }
 
     private void handleScanner() throws JSONException {
