@@ -29,7 +29,7 @@ public class MyWebSocketServer extends WebSocketServer{
     public void onOpen(WebSocket conn,ClientHandshake handshake){
         try {
             JSONObject jsonResponse = new JSONObject();
-            jsonResponse.put("message","Aguardando inicio da transação");
+            jsonResponse.put("command","configure");
             conn.send(jsonResponse.toString());
         } catch(JSONException e){}
     }
@@ -41,8 +41,11 @@ public class MyWebSocketServer extends WebSocketServer{
             String activity = json.optString("activity");
 
             switch(activity){
+                case "configure":
+                    handleTef("configure",json,conn);
+                    break;
                 case "transaction":
-                    handleTransaction(json,conn);
+                    handleTef("transaction",json,conn);
                     break;
                 case "printer":
                     handlePrinter(json);
@@ -89,14 +92,23 @@ public class MyWebSocketServer extends WebSocketServer{
         }).start();
     }
 
-    private void handleTransaction(JSONObject json,WebSocket conn) throws JSONException {
-        if(clisitef == null){
-            clisitef = new CliSiTef(context,conn);
-        } else{
-            clisitef.setWebSocket(conn);
-        }
+    private void handleTef(String activity,JSONObject json,WebSocket conn) throws JSONException {
+        switch(activity){
+            case "configure":
+                if(clisitef == null){
+                    clisitef = new CliSiTef(context,conn);
+                } else{
+                    clisitef.setWebSocket(conn);
+                }
 
-        clisitef.transaction(json);
+                if(!clisitef.configureCliSiTef){
+                    clisitef.configurarCliSiTef(json);
+                }
+                break;
+            case "transaction":
+                clisitef.transaction(json);
+                break;
+        }
     }
 
     private void handlePrinter(JSONObject json) throws JSONException, PrinterException {

@@ -33,7 +33,7 @@ public class CliSiTef implements ICliSiTefListener{
     private String restricoes;
     private int retry = 0;
 
-    private boolean configureCliSiTef = false;
+    public boolean configureCliSiTef = false;
     public boolean finishTransaction;
 
     public CliSiTef(Context context,WebSocket conn){
@@ -44,7 +44,7 @@ public class CliSiTef implements ICliSiTefListener{
     public void setWebSocket(WebSocket newConn) {
         this.conn = newConn;
     }
-    private int configurarCliSiTef(JSONObject parameters){
+    public void configurarCliSiTef(JSONObject parameters){
         String IPSiTef = parameters.optString("IPSiTef");
         String IdLoja = parameters.optString("IdLoja");
         String IdTerminal = parameters.optString("IdTerminal");
@@ -53,22 +53,16 @@ public class CliSiTef implements ICliSiTefListener{
 
         int config = clisitef.configure(IPSiTef,IdLoja,IdTerminal,ParametrosAdicionais);
 
-        return config;
+        if(config == 0){
+            Log.e("CliSiTef", "CliSiTef configurado com sucesso");
+            clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
+            configureCliSiTef = true;
+        } else{
+            Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
+        }
     }
 
     public void transaction(JSONObject parameters){
-        if(!configureCliSiTef){
-            int config = configurarCliSiTef(parameters);
-
-            if(config == 0){
-                Log.e("CliSiTef", "CliSiTef configurado com sucesso");
-            } else{
-                Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
-            }
-        }
-
-        clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
-
         modalidade = parameters.optInt("modalidade");
         valor = parameters.optString("valor");
         docFiscal = parameters.optString("docFiscal");
