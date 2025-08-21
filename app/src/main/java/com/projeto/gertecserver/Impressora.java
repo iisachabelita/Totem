@@ -49,9 +49,6 @@ public class Impressora implements Printer.Listener {
         printer.setPrinterOrientation(OrientationType.DEFAULT);
     }
 
-    // Apenas para testes
-    public void imprimirComprovante_(Bitmap image, JSONArray items, JSONObject parameters){}
-
     public void imprimirComprovante(Bitmap image, JSONArray items, JSONObject parameters) throws PrinterException {
         try {
             // Logo do estabelecimento
