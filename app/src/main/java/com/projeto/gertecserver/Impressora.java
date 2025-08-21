@@ -50,9 +50,9 @@ public class Impressora implements Printer.Listener {
     }
 
     // Apenas para testes
-    public void imprimirComprovante(Bitmap image, JSONArray items, JSONObject parameters){}
+    public void imprimirComprovante_(Bitmap image, JSONArray items, JSONObject parameters){}
 
-    public void imprimirComprovante_(Bitmap image, JSONArray items, JSONObject parameters) throws PrinterException {
+    public void imprimirComprovante(Bitmap image, JSONArray items, JSONObject parameters) throws PrinterException {
         try {
             // Logo do estabelecimento
             PrintConfig printConfig = new PrintConfig();

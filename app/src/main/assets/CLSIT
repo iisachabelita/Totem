@@ -1,5 +1,6 @@
 [Geral]
-TransacoesHabilitadas=16
+TransacoesHabilitadas=16;20;22;26;3014;3192;3193
+;TransacoesAdicionaisHabilitadas=16;20;22;26;3014;3192;3193
 IdentificaMensagens=1
 
 [SiTef]

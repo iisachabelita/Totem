@@ -181,7 +181,7 @@ public class CliSiTef implements ICliSiTefListener{
                  try {
                      // Impressão
                      JSONObject jsonResponse = new JSONObject();
-                     jsonResponse.put("command", "getOrderInfo");
+                     jsonResponse.put("command", "submitOrder");
                      conn.send(jsonResponse.toString());
                  } catch(Exception e){ throw new RuntimeException(e); }
              }
