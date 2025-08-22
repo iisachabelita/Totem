@@ -44,7 +44,7 @@ public class CliSiTef implements ICliSiTefListener{
     public void setWebSocket(WebSocket newConn) {
         this.conn = newConn;
     }
-    public void configurarCliSiTef(JSONObject parameters){
+    public void configurarCliSiTef(JSONObject parameters,Boolean retry){
         String IPSiTef = parameters.optString("IPSiTef");
         String IdLoja = parameters.optString("IdLoja");
         String IdTerminal = parameters.optString("IdTerminal");
@@ -57,6 +57,10 @@ public class CliSiTef implements ICliSiTefListener{
             Log.e("CliSiTef", "CliSiTef configurado com sucesso");
             clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
             configureCliSiTef = true;
+
+            if(retry){
+                transaction(parameters);
+            }
         } else{
             Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
         }
@@ -79,6 +83,10 @@ public class CliSiTef implements ICliSiTefListener{
         if(pendingMessages == 0){
             int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
             Log.e("CliSiTef", "START TRANSACTION: " + status);
+
+            if(status != 0){
+                configurarCliSiTef(parameters,true);
+            }
         }
     }
 

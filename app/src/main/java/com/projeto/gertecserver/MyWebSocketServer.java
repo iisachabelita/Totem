@@ -85,10 +85,18 @@ public class MyWebSocketServer extends WebSocketServer{
         try { this.stop(); } catch(Exception ignored){}
 
         new Thread(() -> {
-            try {
-                Thread.sleep(2000);
-                this.start();
-            } catch(Exception e){ e.printStackTrace(); }
+            int retries = 0;
+            while (retries < 5) {
+                try {
+                    Thread.sleep(5000 * retries);
+                    this.start();
+                    break;
+                } catch(Exception e) {
+                    retries++;
+                    Log.e("WebSocket", "Tentando reconectar: " + retries);
+                    e.printStackTrace();
+                }
+            }
         }).start();
     }
 
@@ -102,7 +110,7 @@ public class MyWebSocketServer extends WebSocketServer{
                 }
 
                 if(!clisitef.configureCliSiTef){
-                    clisitef.configurarCliSiTef(json);
+                    clisitef.configurarCliSiTef(json,false);
                 }
                 break;
             case "transaction":
