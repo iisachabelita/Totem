@@ -19,6 +19,7 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import br.com.softwareexpress.sitef.android.ICliSiTefListener;
+import static com.projeto.gertecserver.MyWebSocketServer.configureCliSiTef;
 
 public class CliSiTef implements ICliSiTefListener{
     private final Context context;
@@ -32,8 +33,6 @@ public class CliSiTef implements ICliSiTefListener{
     private String operador;
     private String restricoes;
     private int retry = 0;
-
-    public boolean configureCliSiTef = false;
     public boolean finishTransaction;
 
     public CliSiTef(Context context,WebSocket conn){
@@ -44,7 +43,7 @@ public class CliSiTef implements ICliSiTefListener{
     public void setWebSocket(WebSocket newConn) {
         this.conn = newConn;
     }
-    public void configurarCliSiTef(JSONObject parameters,Boolean retry){
+    public void configurarCliSiTef(JSONObject parameters){
         String IPSiTef = parameters.optString("IPSiTef");
         String IdLoja = parameters.optString("IdLoja");
         String IdTerminal = parameters.optString("IdTerminal");
@@ -54,13 +53,9 @@ public class CliSiTef implements ICliSiTefListener{
         int config = clisitef.configure(IPSiTef,IdLoja,IdTerminal,ParametrosAdicionais);
 
         if(config == 0){
-            Log.e("CliSiTef", "CliSiTef configurado com sucesso");
+            Log.d("CliSiTef", "CliSiTef configurado com sucesso");
             clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
             configureCliSiTef = true;
-
-            if(retry){
-                transaction(parameters);
-            }
         } else{
             Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
         }
@@ -82,11 +77,7 @@ public class CliSiTef implements ICliSiTefListener{
 
         if(pendingMessages == 0){
             int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
-            Log.e("CliSiTef", "START TRANSACTION: " + status);
-
-            if(status != 0){
-                configurarCliSiTef(parameters,true);
-            }
+            Log.d("CliSiTef", "START TRANSACTION: " + status);
         }
     }
 
@@ -99,7 +90,7 @@ public class CliSiTef implements ICliSiTefListener{
         int maxLength,
         byte[] input
     ){
-        Log.e("CliSiTef", "onData, stage: " + stage + " command: " + command + " fieldId: " + fieldId + " minLength: " + minLength + " maxLength: " + maxLength + " input: " + new String(input));
+        Log.d("CliSiTef", "onData, stage: " + stage + " command: " + command + " fieldId: " + fieldId + " minLength: " + minLength + " maxLength: " + maxLength + " input: " + new String(input));
 
         if(new String(input).equals("13 - Operação Cancelada")){
             clisitef.abortTransaction(-1);
@@ -140,13 +131,6 @@ public class CliSiTef implements ICliSiTefListener{
                     conn.send(jsonResponse.toString());
                 } catch(JSONException e){}
                 break;
-            case CMD_RESULT_DATA: // 0
-                switch(fieldId){
-                    case 121:
-                        MyWebSocketServer.cupom = new String(input);
-                        break;
-                }
-                break;
             case CMD_GET_FIELD_CURRENCY: // 34
                 // Valor monetário
                 switch(fieldId){
@@ -154,8 +138,6 @@ public class CliSiTef implements ICliSiTefListener{
                         clisitef.continueTransaction("0");
                         return;
                 }
-                break;
-            case CMD_ABORT_REQUEST: // 23
                 break;
             case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
                 // Limpa mensagem enviada pelo CMD_PRESS_ANY_KEY & CMD_SHOW_MSG_CASHIER_CUSTOMER
@@ -169,13 +151,14 @@ public class CliSiTef implements ICliSiTefListener{
         clisitef.continueTransaction("");
     }
 
-    public void continueTransaction(String returnTransaction){
-        clisitef.continueTransaction(returnTransaction);
-    }
-
     @Override
     public void onTransactionResult(int stage,int resultCode){
         Log.d("CliSiTef","onTransactionResult, stage " + stage + " resultCode: " + resultCode);
+
+        JSONObject jsonResponse = new JSONObject();
+        try {
+            jsonResponse.put("command", "onTransactionResult");
+        } catch(JSONException e) {}
 
         if(stage == 1 && resultCode == 0){
             try {
@@ -184,23 +167,41 @@ public class CliSiTef implements ICliSiTefListener{
             } catch(Exception e){ throw new RuntimeException(e); }
         }
 
-        if(stage == 2 && resultCode == 0){
-             if(finishTransaction){
-                 try {
-                     // Impressão
-                     JSONObject jsonResponse = new JSONObject();
-                     jsonResponse.put("command", "submitOrder");
-                     conn.send(jsonResponse.toString());
-                 } catch(Exception e){ throw new RuntimeException(e); }
-             }
-        }
+        if(resultCode != 0 || stage == 2 ){
+            String erro;
+            switch(resultCode){
+                case 0:
+                    erro = "Pagamento aprovado!";
+                    break;
+                case -2:
+                case -6:
+                case -15:
+                    erro = "Pagamento cancelado.";
+                    break;
+                case -40:
+                case -41:
+                    erro = "Pagamento recusado. Tente outro cartão.";
+                    break;
+                default:
+                    if(resultCode > 0){
+                        erro = "Pagamento recusado pelo banco.";
+                    } else{
+                        erro = "Não foi possível concluir o pagamento. Tente novamente.";
+                    }
+                    break;
+            }
 
-        if(resultCode != 0){
-            JSONObject jsonResponse = new JSONObject();
-            try {
-                jsonResponse.put("message","erro: " + resultCode + " " + clisitef.getBuffer());
-                conn.send(jsonResponse.toString());
-            } catch(JSONException e){}
+            if(finishTransaction){
+                // Impressão
+                try { jsonResponse.put("status", "success"); } catch(Exception e){ throw new RuntimeException(e); }
+            } else{
+                try {
+                    jsonResponse.put("status","error");
+                    jsonResponse.put("erro",erro);
+                } catch(JSONException e){}
+
+            }
+            conn.send(jsonResponse.toString());
         }
     }
 }

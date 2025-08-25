@@ -1,12 +1,16 @@
 package com.projeto.gertecserver;
 
+import static com.projeto.gertecserver.MyWebSocketServer.configureCliSiTef;
 import static br.com.gertec.easylayer.printer.Alignment.CENTER;
 import static br.com.gertec.easylayer.printer.Alignment.LEFT;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.util.Base64;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -47,124 +51,163 @@ public class Impressora implements Printer.Listener {
         this.printerUtils = printer.getPrinterUtils();
 
         printer.setPrinterOrientation(OrientationType.DEFAULT);
+
+        loadConfig();
     }
 
-    public void imprimirComprovante(Bitmap image, JSONArray items, JSONObject parameters) throws PrinterException {
-        try {
-            // Logo do estabelecimento
+    private String image;
+    private int imageWidth;
+    private int fontSize;
+    private int lineSpacing;
+
+    private void loadConfig(){
+        SharedPreferences prefs = context.getSharedPreferences("Printer", Context.MODE_PRIVATE);
+        image = prefs.getString("image",null);
+        imageWidth = prefs.getInt("imageWidth", 100);
+        fontSize = prefs.getInt("fontSize", 20);
+        lineSpacing = prefs.getInt("lineSpacing", -5);
+    }
+
+    public void configurarImpressora(JSONObject parameters){
+        // SharedPreferences
+        SharedPreferences prefs = context.getSharedPreferences("Printer", Context.MODE_PRIVATE);
+
+        prefs.edit().putString("image",parameters.optString("image")).apply();
+        prefs.edit().putInt("imageWidth", parameters.optInt("imageWidth")).apply();
+        prefs.edit().putInt("fontSize", parameters.optInt("fontSize")).apply();
+        prefs.edit().putInt("lineSpacing", parameters.optInt("lineSpacing")).apply();
+    }
+
+    public void imprimirComprovante(JSONArray items, JSONObject parameters) throws PrinterException {
+        // Logo do estabelecimento
+        if(image != null){
+            byte[] imageBytes = Base64.decode(image,Base64.DEFAULT);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+
             PrintConfig printConfig = new PrintConfig();
-            printConfig.setWidth(100);
-            printConfig.setHeight(100);
+            printConfig.setWidth(imageWidth);
+            printConfig.setHeight(imageWidth);
             printConfig.setAlignment(CENTER);
-            printer.printImage(printConfig,image);
+            printer.printImage(printConfig,bitmap);
             printer.scrollPaper(1);
+        }
 
-            // Separador
-            PrintConfig lineConfig = new PrintConfig();
-            lineConfig.setAlignment(Alignment.CENTER);
-            printer.printImage(lineConfig,createLineSeparator());
+        // Separador
+        PrintConfig lineConfig = new PrintConfig();
+        printer.printImage(lineConfig,createLineSeparator());
 
-            printFormat(parameters.optString("orderConsume"),LEFT,false);
+        printFormat(parameters.optString("orderConsume"),LEFT,false);
 
-            // Separador
-            printer.printImage(lineConfig,createLineSeparator());
+        // Separador
+        printer.printImage(lineConfig,createLineSeparator());
 
-            printFormat("Senha: ",CENTER,false);
-            TextFormat textFormat = new TextFormat();
-            textFormat.setBold(true);
-            textFormat.setFontSize(50);
-            textFormat.setLineSpacing(-5);
-            textFormat.setAlignment(CENTER);
-            printer.printText(textFormat,parameters.optString("orderRef"));
+        printFormat("Senha: ",CENTER,false);
 
-            // Separador
-            printer.printImage(lineConfig,createLineSeparator());
+        TextFormat textFormat = new TextFormat();
+        textFormat.setBold(true);
+        textFormat.setFontSize(50);
+        textFormat.setLineSpacing(-5);
+        textFormat.setAlignment(CENTER);
+        printer.printText(textFormat,parameters.optString("orderRef"));
 
-            printFormat(parameters.optString("nameFantasy"),LEFT,false);
-            printFormat(parameters.optString("reasonSocial"),LEFT,false);
+        // Separador
+        printer.printImage(lineConfig,createLineSeparator());
+
+        printFormat(parameters.optString("nameFantasy"),LEFT,false);
+        printFormat(parameters.optString("reasonSocial"),LEFT,false);
+
+        // Espaçamento
+        printer.printImage(lineConfig,createLineSpace());
+
+        printFormat(parameters.optString("adressRef"),LEFT,false);
+
+        // Espaçamento
+        printer.printImage(lineConfig,createLineSpace());
+
+        printFormat(parameters.optString("orderHash"),LEFT,false);
+
+        // Separador
+        printer.printImage(lineConfig,createLineSeparator());
+
+        // Itens
+        try {
+            printFormat("Itens", LEFT, false);
+
+            // Espaçamento
             printer.printImage(lineConfig,createLineSpace());
-            printFormat(parameters.optString("adressRef"),LEFT,false);
-            printer.printImage(lineConfig,createLineSpace());
-            printFormat(parameters.optString("orderHash"),LEFT,false);
 
-            // Separador
-            printer.printImage(lineConfig,createLineSeparator());
+            for(int i = 0; i < items.length(); i++){
+                JSONObject item = items.getJSONObject(i);
 
-            // Itens
-            try {
-                printFormat("Itens", LEFT, false);
-                printer.printImage(lineConfig,createLineSpace());
+                String titulo = item.getString("ite_titulo");
+                Double preco = item.getDouble("ite_preco");
+                String quantidade = item.getString("ite_quantidade");
 
-                for(int i = 0; i < items.length(); i++){
-                    JSONObject item = items.getJSONObject(i);
+                printFormat(formatLine(
+                    (quantidade != null && !quantidade.isEmpty()) ? quantidade + "x " + titulo : titulo,
+                    (preco != null && preco > 0) ? "R$ " + String.format("%.2f", preco) : ""
+                ),LEFT,false);
 
-                    String titulo = item.getString("ite_titulo");
-                    Double preco = item.getDouble("ite_preco");
-                    String quantidade = item.getString("ite_quantidade");
+                if(item.has("perguntas")){
+                    JSONArray perguntas = item.getJSONArray("perguntas");
 
-                    printFormat(formatLine(
-                        (quantidade != null && !quantidade.isEmpty()) ? quantidade + "x " + titulo : titulo,
-                        (preco != null && preco > 0) ? "R$ " + String.format("%.2f", preco) : ""
-                    ),LEFT,false);
+                    for(int j = 0; j < perguntas.length(); j++){
+                        JSONObject pergunta = perguntas.getJSONObject(j);
+                        String label = pergunta.getString("per_label");
 
-                    if(item.has("perguntas")){
-                        JSONArray perguntas = item.getJSONArray("perguntas");
+                        if(pergunta.has("resposta") && !pergunta.isNull("resposta")){
+                            JSONObject respostaObj = pergunta.getJSONObject("resposta");
+                            String title = respostaObj.getString("res_titulo");
 
-                        for(int j = 0; j < perguntas.length(); j++){
-                            JSONObject pergunta = perguntas.getJSONObject(j);
-                            String label = pergunta.getString("per_label");
+                            printFormat("- " + label + ": " + title,LEFT,false);
+                        }
 
-                            if(pergunta.has("resposta") && !pergunta.isNull("resposta")){
-                                JSONObject respostaObj = pergunta.getJSONObject("resposta");
+                        if(pergunta.has("respostas") && !pergunta.isNull("respostas")){
+                            JSONArray respostas = pergunta.getJSONArray("respostas");
+
+                            for(int k = 0; k < respostas.length(); k++){
+                                JSONObject respostaObj = respostas.getJSONObject(k);
                                 String title = respostaObj.getString("res_titulo");
+                                String qntd = respostaObj.getString("res_quantidade");
 
-                                printFormat("- " + label + ": " + title,LEFT,false);
-                            }
-
-                            if(pergunta.has("respostas") && !pergunta.isNull("respostas")){
-                                JSONArray respostas = pergunta.getJSONArray("respostas");
-
-                                for(int k = 0; k < respostas.length(); k++){
-                                    JSONObject respostaObj = respostas.getJSONObject(k);
-                                    String title = respostaObj.getString("res_titulo");
-                                    String qntd = respostaObj.getString("res_quantidade");
-
-                                    printFormat((qntd != null && !qntd.isEmpty() && Integer.parseInt(qntd) > 1) ? "- " + qntd + "x " + title : "- " + title,LEFT,false);
-                                }
+                                printFormat((qntd != null && !qntd.isEmpty() && Integer.parseInt(qntd) > 1) ? "- " + qntd + "x " + title : "- " + title,LEFT,false);
                             }
                         }
                     }
                 }
-            } catch(JSONException e){}
-
-            String obs = parameters.optString("observText");
-            if(obs != null && !obs.isEmpty()){
-                printFormat(obs, LEFT, false);
-                printer.printImage(lineConfig,createLineSpace());
             }
+        } catch(JSONException e){}
 
-            // Separador
-            printer.printImage(lineConfig,createLineSeparator());
+        String obs = parameters.optString("observText");
+        if(obs != null && !obs.isEmpty()){
+            printFormat(obs, LEFT, false);
 
-            printFormat(parameters.optString("nameUser"),LEFT,false);
-            printFormat(parameters.optString("cpfCnpjUser"),LEFT,false);
 
-            // Separador
-            printer.printImage(lineConfig,createLineSeparator());
+            // Espaçamento
+            printer.printImage(lineConfig,createLineSpace());
+        }
 
-            printFormat(parameters.optString("paymentType"),LEFT,false);
-            printFormat(formatLine("Sub-total",parameters.optString("valueSubtotal")),LEFT,false);
-            printFormat(formatLine("Desconto",parameters.optString("valueDiscount")),LEFT,false);
-            printFormat(formatLine("Taxa pagto.",parameters.optString("valueFee")),LEFT,false);
-            printFormat(formatLine("Total",parameters.optString("valueTotal")),LEFT,true);
+        // Separador
+        printer.printImage(lineConfig,createLineSeparator());
 
-            // Separador
-            printer.printImage(lineConfig,createLineSeparator());
-            printFormat(new SimpleDateFormat("dd/MM/yyyy - HH:mm:ss").format(new Date()),CENTER,false);
+        printFormat(parameters.optString("nameUser"),LEFT,false);
+        printFormat(parameters.optString("cpfCnpjUser"),LEFT,false);
 
-            printer.scrollPaper(1);
-            printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
-        } catch(PrinterException e){}
+        // Separador
+        printer.printImage(lineConfig,createLineSeparator());
+
+        printFormat(parameters.optString("paymentType"),LEFT,false);
+        printFormat(formatLine("Sub-total",parameters.optString("valueSubtotal")),LEFT,false);
+        printFormat(formatLine("Desconto",parameters.optString("valueDiscount")),LEFT,false);
+        printFormat(formatLine("Taxa pagto.",parameters.optString("valueFee")),LEFT,false);
+        printFormat(formatLine("Total",parameters.optString("valueTotal")),LEFT,true);
+
+        // Separador
+        printer.printImage(lineConfig,createLineSeparator());
+        printFormat(new SimpleDateFormat("dd/MM/yyyy - HH:mm:ss").format(new Date()),CENTER,false);
+
+        printer.scrollPaper(1);
+        printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
     }
 
     private void printFormat(String s, Alignment alignment, Boolean bold) throws PrinterException{
@@ -204,8 +247,8 @@ public class Impressora implements Printer.Listener {
                 TextFormat textFormat = new TextFormat();
                 textFormat.setBold(bold);
                 textFormat.setUnderscore(false);
-                textFormat.setFontSize(20);
-                textFormat.setLineSpacing(-5);
+                textFormat.setFontSize(fontSize);
+                textFormat.setLineSpacing(lineSpacing);
                 textFormat.setAlignment(alignment);
 
                 printer.printText(textFormat,linha);
@@ -277,7 +320,7 @@ public class Impressora implements Printer.Listener {
 
     @Override
     public void onPrinterSuccessful(int printerRequestId){
-        Log.i("Impressora", "Impressão realizada com sucesso. ID: " + printerRequestId);
+        Log.d("Impressora", "Impressão realizada com sucesso. ID: " + printerRequestId);
     }
 }
 

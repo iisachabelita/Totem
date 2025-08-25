@@ -9,6 +9,7 @@ import android.view.WindowInsetsController;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import androidx.core.content.ContextCompat;
 
 public class MainActivity extends Activity{
     private WebView webView;
@@ -16,7 +17,8 @@ public class MainActivity extends Activity{
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        startService(new Intent(this,WebSocketService.class));
+        // startService(new Intent(this,WebSocketService.class));
+        ContextCompat.startForegroundService(this,new Intent(this,WebSocketService.class));
 
         webView = new WebView(this);
 
@@ -30,7 +32,7 @@ public class MainActivity extends Activity{
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
-        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW); // Para WSS/HTTPS misto
+        // webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW); // Para WSS/HTTPS misto
 
         webView.setWebViewClient(new WebViewClient());
         setContentView(webView);

@@ -2,9 +2,6 @@ package com.projeto.gertecserver;
 
 import static com.projeto.gertecserver.WebSocketService.clisitef;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.util.Base64;
 import android.util.Log;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -13,12 +10,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.net.InetSocketAddress;
-
 import br.com.gertec.easylayer.printer.PrinterException;
 
 public class MyWebSocketServer extends WebSocketServer{
     private WebSocketService context;
-    public static String cupom;
+    public static boolean configureCliSiTef = false;
 
     public MyWebSocketServer(int port,WebSocketService context){
         super(new InetSocketAddress(port));
@@ -27,11 +23,14 @@ public class MyWebSocketServer extends WebSocketServer{
 
     @Override
     public void onOpen(WebSocket conn,ClientHandshake handshake){
-        try {
-            JSONObject jsonResponse = new JSONObject();
-            jsonResponse.put("command","configure");
-            conn.send(jsonResponse.toString());
-        } catch(JSONException e){}
+        if(!configureCliSiTef){
+            JSONObject obj = new JSONObject();
+            try {
+                obj.put("command", "configure");
+            } catch(JSONException e){ e.printStackTrace(); }
+
+            conn.send(obj.toString());
+        }
     }
 
     @Override
@@ -42,10 +41,10 @@ public class MyWebSocketServer extends WebSocketServer{
 
             switch(activity){
                 case "configure":
-                    handleTef("configure",json,conn);
+                    handleConfig(json,conn);
                     break;
                 case "transaction":
-                    handleTef("transaction",json,conn);
+                    handleTef(json,conn);
                     break;
                 case "printer":
                     handlePrinter(json);
@@ -63,7 +62,7 @@ public class MyWebSocketServer extends WebSocketServer{
 
     @Override
     public void onError(WebSocket conn,Exception ex){
-        Log.d("MyWebSocketServer","onError: " + ex.getMessage());
+        Log.e("MyWebSocketServer","onError: " + ex.getMessage());
 
         if(conn != null && conn.isOpen()){
             try {
@@ -84,52 +83,36 @@ public class MyWebSocketServer extends WebSocketServer{
     private void restartServer(){
         try { this.stop(); } catch(Exception ignored){}
 
-        new Thread(() -> {
-            int retries = 0;
-            while (retries < 5) {
-                try {
-                    Thread.sleep(5000 * retries);
-                    this.start();
-                    break;
-                } catch(Exception e) {
-                    retries++;
-                    Log.e("WebSocket", "Tentando reconectar: " + retries);
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        configureCliSiTef = false;
     }
 
-    private void handleTef(String activity,JSONObject json,WebSocket conn) throws JSONException {
-        switch(activity){
-            case "configure":
-                if(clisitef == null){
-                    clisitef = new CliSiTef(context,conn);
-                } else{
-                    clisitef.setWebSocket(conn);
-                }
-
-                if(!clisitef.configureCliSiTef){
-                    clisitef.configurarCliSiTef(json,false);
-                }
-                break;
-            case "transaction":
-                clisitef.transaction(json);
-                break;
+    private void setCliSiTef(WebSocket conn){
+        if(clisitef == null){
+            clisitef = new CliSiTef(context,conn);
+        } else{
+            clisitef.setWebSocket(conn);
         }
+    }
+
+    private void handleConfig(JSONObject json,WebSocket conn) throws JSONException {
+        Log.d("WebSocket", "Configurando: " + json.toString());
+
+        setCliSiTef(conn);
+
+        clisitef.configurarCliSiTef(json);
+        Impressora impressora = new Impressora(context);
+        impressora.configurarImpressora(json);
+    }
+    private void handleTef(JSONObject json,WebSocket conn){
+        setCliSiTef(conn);
+        clisitef.transaction(json);
     }
 
     private void handlePrinter(JSONObject json) throws JSONException, PrinterException {
-        String image = json.optString("image");
+        Impressora impressora = new Impressora(context);
         JSONObject parameters = json.optJSONObject("parameters");
         JSONArray items = json.optJSONArray("items");
-        byte[] imageBytes = Base64.decode(image,Base64.DEFAULT);
-        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-
-        if(bitmap != null){
-            Impressora impressora = new Impressora(context);
-            impressora.imprimirComprovante(bitmap,items,parameters);
-        }
+        impressora.imprimirComprovante(items,parameters);
     }
 
     private void handleScanner() throws JSONException {

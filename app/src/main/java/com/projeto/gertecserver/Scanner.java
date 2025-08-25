@@ -15,7 +15,7 @@ public class Scanner extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.e("Scanner", "Iniciando leitura no scanner embutido...");
+        Log.d("Scanner", "Iniciando leitura no scanner embutido...");
 
         scanner = CodeScanner.getInstance(this);
 
@@ -23,18 +23,18 @@ public class Scanner extends Activity {
         scanner.scanCode(this);
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            Log.e("Scanner", "Scanner timeout - parando leitura.");
+            Log.d("Scanner", "Scanner timeout - parando leitura.");
             scanner.stopService();
             finish();
         }, 30000);
     }
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.e("onActivityResult", "requestCode: " + requestCode + ", resultCode: " + resultCode);
+        Log.d("onActivityResult", "requestCode: " + requestCode + ", resultCode: " + resultCode);
     }
 
     @Override
     protected void onPause() {
-        Log.e("onPause", "Pausando scanner...");
+        Log.d("onPause", "Pausando scanner...");
         super.onPause();
     }
 }
