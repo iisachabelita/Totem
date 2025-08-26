@@ -10,6 +10,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Typeface;
+import android.text.TextPaint;
 import android.util.Base64;
 import android.util.Log;
 
@@ -56,16 +58,19 @@ public class Impressora implements Printer.Listener {
     }
 
     private String image;
-    private int imageWidth;
     private int fontSize;
     private int lineSpacing;
+    private int maxChars;
+    private int topHeight;
 
     private void loadConfig(){
+        // SharedPreferences
         SharedPreferences prefs = context.getSharedPreferences("Printer", Context.MODE_PRIVATE);
         image = prefs.getString("image",null);
-        imageWidth = prefs.getInt("imageWidth", 100);
         fontSize = prefs.getInt("fontSize", 20);
-        lineSpacing = prefs.getInt("lineSpacing", -5);
+        lineSpacing = prefs.getInt("lineSpacing", 0);
+        maxChars = prefs.getInt("maxChars", 32);
+        topHeight = prefs.getInt("topHeight", 4);
     }
 
     public void configurarImpressora(JSONObject parameters){
@@ -73,9 +78,30 @@ public class Impressora implements Printer.Listener {
         SharedPreferences prefs = context.getSharedPreferences("Printer", Context.MODE_PRIVATE);
 
         prefs.edit().putString("image",parameters.optString("image")).apply();
-        prefs.edit().putInt("imageWidth", parameters.optInt("imageWidth")).apply();
-        prefs.edit().putInt("fontSize", parameters.optInt("fontSize")).apply();
+
+        switch(parameters.optInt("fontSize")){
+            case 1:
+                prefs.edit().putInt("fontSize", 20).apply();
+                prefs.edit().putInt("topHeight", 4).apply();
+                break;
+            case 2:
+                prefs.edit().putInt("fontSize", 25).apply();
+                prefs.edit().putInt("topHeight", 6).apply();
+                // Ideal
+                // prefs.edit().putInt("maxChars", 25).apply();
+                // prefs.edit().putInt("maxChars", 1).apply();
+                break;
+            case 3:
+                prefs.edit().putInt("fontSize", 30).apply();
+                prefs.edit().putInt("topHeight", 8).apply();
+                // Ideal
+                // prefs.edit().putInt("maxChars", 21).apply();
+                // prefs.edit().putInt("maxChars", 2).apply();
+                break;
+        }
+
         prefs.edit().putInt("lineSpacing", parameters.optInt("lineSpacing")).apply();
+        prefs.edit().putInt("maxChars", parameters.optInt("maxChars")).apply();
     }
 
     public void imprimirComprovante(JSONArray items, JSONObject parameters) throws PrinterException {
@@ -85,8 +111,8 @@ public class Impressora implements Printer.Listener {
             Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
 
             PrintConfig printConfig = new PrintConfig();
-            printConfig.setWidth(imageWidth);
-            printConfig.setHeight(imageWidth);
+            printConfig.setWidth(100);
+            printConfig.setHeight(100);
             printConfig.setAlignment(CENTER);
             printer.printImage(printConfig,bitmap);
             printer.scrollPaper(1);
@@ -106,7 +132,7 @@ public class Impressora implements Printer.Listener {
         TextFormat textFormat = new TextFormat();
         textFormat.setBold(true);
         textFormat.setFontSize(50);
-        textFormat.setLineSpacing(-5);
+        textFormat.setLineSpacing(15);
         textFormat.setAlignment(CENTER);
         printer.printText(textFormat,parameters.optString("orderRef"));
 
@@ -212,19 +238,17 @@ public class Impressora implements Printer.Listener {
 
     private void printFormat(String s, Alignment alignment, Boolean bold) throws PrinterException{
         if(s != null && !s.isEmpty()){
-            final int MAX_CHARS = 32;
-
             List<String> linhas = new ArrayList<>();
 
             // Tratativa para quebra de linha
-            if(s.length() > MAX_CHARS){
+            if(s.length() > maxChars){
                 // Evitando cortar palavras
                 String[] palavras = s.split(" ");
                 StringBuilder linhaAtual = new StringBuilder();
 
                 for(String palavra : palavras){
                     // Se adicionar essa palavra passar do limite, salva linha e começa outra
-                    if(linhaAtual.length() > 0 && (linhaAtual.length() + 1 + palavra.length()) > MAX_CHARS){
+                    if(linhaAtual.length() > 0 && (linhaAtual.length() + 1 + palavra.length()) > maxChars){
                         linhas.add(linhaAtual.toString());
                         linhaAtual = new StringBuilder();
                     }
@@ -257,13 +281,11 @@ public class Impressora implements Printer.Listener {
     }
 
     private String formatLine(String var1,String var2){
-        int width = 32;
-
-        if(var1.length() + var2.length() >= width){
+        if(var1.length() + var2.length() >= maxChars){
             return var1 + " " + var2;
         }
 
-        int spaces = width - var1.length() - var2.length();
+        int spaces = maxChars - var1.length() - var2.length();
         StringBuilder sb = new StringBuilder();
         sb.append(var1);
         for(int i = 0; i < spaces; i++){
@@ -273,41 +295,46 @@ public class Impressora implements Printer.Listener {
         return sb.toString();
     }
 
-    private static Bitmap createLineSeparator(){
-        int height = 2;
+    private Bitmap createLineSeparator(){
+        int lineHeight = 2;
+        int bottomHeight = 2;
+        int totalHeight = topHeight + lineHeight + bottomHeight;
 
-        // Bitmap mutável
-        Bitmap bitmap = Bitmap.createBitmap(MAX_PRINT_WIDTH,height,Bitmap.Config.ARGB_8888);
+        Bitmap bitmap = Bitmap.createBitmap(MAX_PRINT_WIDTH,totalHeight,Bitmap.Config.ARGB_8888);
 
-        // Canvas para desenhar no Bitmap
         Canvas canvas = new Canvas(bitmap);
 
-        // Paint para desenhar a linha
+        bitmap.eraseColor(Color.TRANSPARENT);
+
         Paint paint = new Paint();
         paint.setColor(Color.BLACK);
         paint.setStyle(Paint.Style.FILL);
 
-        // Retângulo que representa a linha: left, top, right, bottom, paint
-        canvas.drawRect(0f, 0f,MAX_PRINT_WIDTH,height,paint);
+        // Retângulo: left, top, right, bottom, paint
+        // canvas.drawRect(0f, 0f,MAX_PRINT_WIDTH,height,paint);
+        canvas.drawRect(
+                0f,
+                topHeight,
+                MAX_PRINT_WIDTH,
+                topHeight + lineHeight,
+                paint
+        );
 
         return bitmap;
     }
 
-    private static Bitmap createLineSpace(){
+    private Bitmap createLineSpace(){
         int height = 15;
 
-        // Bitmap mutável
         Bitmap bitmap = Bitmap.createBitmap(MAX_PRINT_WIDTH,height,Bitmap.Config.ARGB_8888);
 
-        // Canvas para desenhar no Bitmap
         Canvas canvas = new Canvas(bitmap);
 
-        // Paint para desenhar a linha
         Paint paint = new Paint();
         paint.setColor(Color.TRANSPARENT);
         paint.setStyle(Paint.Style.FILL);
 
-        // Retângulo que representa a linha: left, top, right, bottom, paint
+        // Retângulo: left, top, right, bottom, paint
         canvas.drawRect(0f, 0f,MAX_PRINT_WIDTH,height,paint);
 
         return bitmap;
