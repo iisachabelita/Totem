@@ -77,9 +77,9 @@ public class Impressora implements Printer.Listener {
         // SharedPreferences
         SharedPreferences prefs = context.getSharedPreferences("Printer", Context.MODE_PRIVATE);
 
-        prefs.edit().putString("image",parameters.optString("image")).apply();
+        prefs.edit().putString("image",parameters.optString("image","")).apply();
 
-        switch(parameters.optInt("fontSize")){
+        switch(parameters.optInt("fontSize",1)){
             case 1:
                 prefs.edit().putInt("fontSize", 20).apply();
                 prefs.edit().putInt("topHeight", 4).apply();
@@ -89,22 +89,22 @@ public class Impressora implements Printer.Listener {
                 prefs.edit().putInt("topHeight", 6).apply();
                 // Ideal
                 // prefs.edit().putInt("maxChars", 25).apply();
-                // prefs.edit().putInt("maxChars", 1).apply();
+                // prefs.edit().putInt("lineSpacing", 3).apply();
                 break;
             case 3:
                 prefs.edit().putInt("fontSize", 30).apply();
                 prefs.edit().putInt("topHeight", 8).apply();
                 // Ideal
                 // prefs.edit().putInt("maxChars", 21).apply();
-                // prefs.edit().putInt("maxChars", 2).apply();
+                // prefs.edit().putInt("lineSpacing", 5).apply();
                 break;
         }
 
-        prefs.edit().putInt("lineSpacing", parameters.optInt("lineSpacing")).apply();
-        prefs.edit().putInt("maxChars", parameters.optInt("maxChars")).apply();
+        prefs.edit().putInt("lineSpacing", parameters.optInt("lineSpacing",0)).apply();
+        prefs.edit().putInt("maxChars", parameters.optInt("maxChars",32)).apply();
     }
 
-    public void imprimirComprovante(JSONArray items, JSONObject parameters) throws PrinterException {
+    public void imprimirComprovante(JSONArray items, JSONObject parameters) throws PrinterException, JSONException {
         // Logo do estabelecimento
         if(image != null){
             byte[] imageBytes = Base64.decode(image,Base64.DEFAULT);
@@ -122,7 +122,7 @@ public class Impressora implements Printer.Listener {
         PrintConfig lineConfig = new PrintConfig();
         printer.printImage(lineConfig,createLineSeparator());
 
-        printFormat(parameters.optString("orderConsume"),LEFT,false);
+        printFormat(parameters.optString("orderConsume",""),LEFT,false);
 
         // Separador
         printer.printImage(lineConfig,createLineSeparator());
@@ -134,92 +134,97 @@ public class Impressora implements Printer.Listener {
         textFormat.setFontSize(50);
         textFormat.setLineSpacing(15);
         textFormat.setAlignment(CENTER);
-        printer.printText(textFormat,parameters.optString("orderRef"));
+        printer.printText(textFormat,parameters.optString("orderRef",""));
 
         // Separador
         printer.printImage(lineConfig,createLineSeparator());
 
-        printFormat(parameters.optString("nameFantasy"),LEFT,false);
-        printFormat(parameters.optString("reasonSocial"),LEFT,false);
+        printFormat(parameters.optString("nameFantasy",""),LEFT,false);
+        printFormat(parameters.optString("reasonSocial",""),LEFT,false);
 
         // Espaçamento
         printer.printImage(lineConfig,createLineSpace());
 
-        printFormat(parameters.optString("adressRef"),LEFT,false);
+        printFormat(parameters.optString("adressRef",""),LEFT,false);
 
         // Espaçamento
         printer.printImage(lineConfig,createLineSpace());
 
-        printFormat(parameters.optString("orderHash"),LEFT,false);
-
-        // Separador
-        printer.printImage(lineConfig,createLineSeparator());
+        printFormat(parameters.optString("orderHash",""),LEFT,false);
 
         // Itens
-        try {
+        if(items != null && items.length() > 0){
+            // Separador
+            printer.printImage(lineConfig,createLineSeparator());
+
             printFormat("Itens", LEFT, false);
 
             // Espaçamento
-            printer.printImage(lineConfig,createLineSpace());
+            printer.printImage(lineConfig, createLineSpace());
 
-            for(int i = 0; i < items.length(); i++){
+            for (int i = 0; i < items.length(); i++) {
                 JSONObject item = items.getJSONObject(i);
 
-                String titulo = item.getString("ite_titulo");
-                Double preco = item.getDouble("ite_preco");
-                String quantidade = item.getString("ite_quantidade");
+                String titulo = item.optString("ite_titulo","");
+                String preco = item.optString("ite_preco","");
 
-                printFormat(formatLine(
-                    (quantidade != null && !quantidade.isEmpty()) ? quantidade + "x " + titulo : titulo,
-                    (preco != null && preco > 0) ? "R$ " + String.format("%.2f", preco) : ""
-                ),LEFT,false);
+                printFormat(formatLine(titulo, preco), LEFT, false);
 
-                if(item.has("perguntas")){
+                if (item.has("perguntas")) {
                     JSONArray perguntas = item.getJSONArray("perguntas");
 
-                    for(int j = 0; j < perguntas.length(); j++){
+                    for (int j = 0; j < perguntas.length(); j++) {
                         JSONObject pergunta = perguntas.getJSONObject(j);
                         String label = pergunta.getString("per_label");
 
-                        if(pergunta.has("respostas") && !pergunta.isNull("respostas")){
+                        if (pergunta.has("respostas") && !pergunta.isNull("respostas")) {
                             JSONArray respostas = pergunta.getJSONArray("respostas");
 
-                            for(int k = 0; k < respostas.length(); k++){
+                            for (int k = 0; k < respostas.length(); k++) {
                                 JSONObject respostaObj = respostas.getJSONObject(k);
-                                String title = respostaObj.getString("res_titulo");
-                                String qntd = respostaObj.getString("res_quantidade");
+                                String title = respostaObj.optString("res_titulo","");
+                                String price = respostaObj.optString("res_preco","");
 
-                                printFormat((qntd != null && !qntd.isEmpty() && Integer.parseInt(qntd) > 1) ? "- " + qntd + "x " + title : "- " + title,LEFT,false);
+                                printFormat(formatLine(title, price), LEFT, false);
                             }
                         }
                     }
                 }
             }
-        } catch(JSONException e){}
+        }
 
-        String obs = parameters.optString("observText");
+        String obs = parameters.optString("observText","");
         if(obs != null && !obs.isEmpty()){
+            // Separador
+            printer.printImage(lineConfig,createLineSeparator());
+
             printFormat(obs, LEFT, false);
-
-
-            // Espaçamento
-            printer.printImage(lineConfig,createLineSpace());
         }
 
         // Separador
         printer.printImage(lineConfig,createLineSeparator());
 
-        printFormat(parameters.optString("nameUser"),LEFT,false);
-        printFormat(parameters.optString("cpfCnpjUser"),LEFT,false);
+        printFormat(parameters.optString("nameUser",""),LEFT,false);
+        printFormat(parameters.optString("phoneUser",""),LEFT,false);
+        printFormat(parameters.optString("cpfCnpjUser",""),LEFT,false);
 
         // Separador
         printer.printImage(lineConfig,createLineSeparator());
 
-        printFormat(parameters.optString("paymentType"),LEFT,false);
-        printFormat(formatLine("Sub-total",parameters.optString("valueSubtotal")),LEFT,false);
-        printFormat(formatLine("Desconto",parameters.optString("valueDiscount")),LEFT,false);
-        printFormat(formatLine("Taxa pagto.",parameters.optString("valueFee")),LEFT,false);
-        printFormat(formatLine("Total",parameters.optString("valueTotal")),LEFT,true);
+        printFormat(parameters.optString("paymentType",""),LEFT,false);
+        printFormat(formatLine("Sub-total",parameters.optString("valueSubtotal","")),LEFT,false);
+
+        String discount = parameters.optString("valueDiscount","");
+        if(discount != null && !discount.isEmpty()){
+            printFormat(formatLine("Desconto",discount),LEFT,false);
+        }
+
+        String fee = parameters.optString("valueFee","");
+        if(fee != null && !fee.isEmpty()){
+            printFormat(formatLine("Taxa pagto.",fee),LEFT,false);
+        }
+
+        printFormat(formatLine("Total",parameters.optString("valueTotal","")),LEFT,true);
 
         // Separador
         printer.printImage(lineConfig,createLineSeparator());
