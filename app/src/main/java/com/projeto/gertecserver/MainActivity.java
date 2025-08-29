@@ -13,6 +13,7 @@ import org.json.JSONObject;
 
 public class MainActivity extends Activity{
     private static WebView webView;
+    // private static final String LOGIN_URL = "https://www.deeliv.app/totem/globais/login";
     private static final String LOGIN_URL = "https://isabelly-deeliv.felippebueno.com.br/totem/globais/login";
     private boolean configureSent = false;
 
