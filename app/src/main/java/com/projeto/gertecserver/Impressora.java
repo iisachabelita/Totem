@@ -175,7 +175,6 @@ public class Impressora implements Printer.Listener {
 
                     for (int j = 0; j < perguntas.length(); j++) {
                         JSONObject pergunta = perguntas.getJSONObject(j);
-                        String label = pergunta.getString("per_label");
 
                         if (pergunta.has("respostas") && !pergunta.isNull("respostas")) {
                             JSONArray respostas = pergunta.getJSONArray("respostas");

@@ -94,7 +94,7 @@ public class MyWebSocketServer extends WebSocketServer{
         }
     }
 
-    private void handleConfig(JSONObject json,WebSocket conn) throws JSONException {
+    private void handleConfig(JSONObject json,WebSocket conn) throws Exception {
         Log.d("WebSocket", "Configurando: " + json.toString());
 
         setCliSiTef(conn);

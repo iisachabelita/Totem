@@ -43,7 +43,7 @@ public class CliSiTef implements ICliSiTefListener{
     public void setWebSocket(WebSocket newConn) {
         this.conn = newConn;
     }
-    public void configurarCliSiTef(JSONObject parameters){
+    public void configurarCliSiTef(JSONObject parameters) throws Exception {
         String IPSiTef = parameters.optString("IPSiTef");
         String IdLoja = parameters.optString("IdLoja");
         String IdTerminal = parameters.optString("IdTerminal");
@@ -54,8 +54,11 @@ public class CliSiTef implements ICliSiTefListener{
 
         if(config == 0){
             Log.d("CliSiTef", "CliSiTef configurado com sucesso");
-            clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
-            configureCliSiTef = true;
+
+            if(clisitef.pinpad.isPresent()){
+                clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
+                configureCliSiTef = true;
+            }
         } else{
             Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
         }
