@@ -1,20 +1,15 @@
 package com.projeto.gertecserver;
 
-import static com.projeto.gertecserver.MyWebSocketServer.configureCliSiTef;
 import static br.com.gertec.easylayer.printer.Alignment.CENTER;
 import static br.com.gertec.easylayer.printer.Alignment.LEFT;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Typeface;
-import android.text.TextPaint;
 import android.util.Base64;
 import android.util.Log;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,7 +17,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
 import br.com.gertec.easylayer.printer.Alignment;
 import br.com.gertec.easylayer.printer.CutType;
 import br.com.gertec.easylayer.printer.OrientationType;
@@ -31,12 +25,7 @@ import br.com.gertec.easylayer.printer.Printer;
 import br.com.gertec.easylayer.printer.PrinterError;
 import br.com.gertec.easylayer.printer.PrinterException;
 import br.com.gertec.easylayer.printer.PrinterUtils;
-import br.com.gertec.easylayer.printer.Receipt;
 import br.com.gertec.easylayer.printer.TextFormat;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Color;
 
 public class Impressora implements Printer.Listener {

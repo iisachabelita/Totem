@@ -1,30 +1,24 @@
 package com.projeto.gertecserver;
 
-import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_ABORT_REQUEST;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CASHIER_CUSTOMER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CONFIRMATION;
-import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_CURRENCY;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_MENU_OPTION;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_PRESS_ANY_KEY;
-import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_RESULT_DATA;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER_CUSTOMER;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import org.java_websocket.WebSocket;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import br.com.softwareexpress.sitef.android.ICliSiTefListener;
-import static com.projeto.gertecserver.MyWebSocketServer.configureCliSiTef;
 
 public class CliSiTef implements ICliSiTefListener{
     private final Context context;
     private final br.com.softwareexpress.sitef.android.CliSiTef clisitef;
-    private WebSocket conn;
     private int modalidade;
     private String valor;
     private String docFiscal;
@@ -35,13 +29,9 @@ public class CliSiTef implements ICliSiTefListener{
     private int retry = 0;
     public boolean finishTransaction;
 
-    public CliSiTef(Context context,WebSocket conn){
+    public CliSiTef(Context context){
         this.context = context.getApplicationContext();
         this.clisitef = new br.com.softwareexpress.sitef.android.CliSiTef(this.context);
-        this.conn = conn;
-    }
-    public void setWebSocket(WebSocket newConn) {
-        this.conn = newConn;
     }
     public void configurarCliSiTef(JSONObject parameters) throws Exception {
         String IPSiTef = parameters.optString("IPSiTef");
@@ -57,7 +47,6 @@ public class CliSiTef implements ICliSiTefListener{
 
             if(clisitef.pinpad.isPresent()){
                 clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
-                configureCliSiTef = true;
             }
         } else{
             Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
@@ -116,7 +105,7 @@ public class CliSiTef implements ICliSiTefListener{
                         try {
                             JSONObject jsonResponse = new JSONObject();
                             jsonResponse.put("message","Não foi possível ler o cartão. Tente novamente usando outra forma: insira, aproxime ou passe na tarja.");
-                            conn.send(jsonResponse.toString());
+                            MainActivity.send(jsonResponse.toString());
                         } catch(JSONException e){}
                     } else{
                         confirm = "1"; // Cancela
@@ -131,7 +120,7 @@ public class CliSiTef implements ICliSiTefListener{
                 try {
                     JSONObject jsonResponse = new JSONObject();
                     jsonResponse.put("message",new String(input));
-                    conn.send(jsonResponse.toString());
+                    MainActivity.send(jsonResponse.toString());
                 } catch(JSONException e){}
                 break;
             case CMD_GET_FIELD_CURRENCY: // 34
@@ -147,7 +136,7 @@ public class CliSiTef implements ICliSiTefListener{
                 try {
                     JSONObject jsonResponse = new JSONObject();
                     jsonResponse.put("message","");
-                    conn.send(jsonResponse.toString());
+                    MainActivity.send(jsonResponse.toString());
                 } catch(JSONException e){}
             }
         }
@@ -167,7 +156,7 @@ public class CliSiTef implements ICliSiTefListener{
             try {
                 clisitef.finishTransaction(1);
                 finishTransaction = true;
-            } catch(Exception e){ throw new RuntimeException(e); }
+            } catch(Exception e){ }
         }
 
         if(resultCode != 0 || stage == 2 ){
@@ -196,7 +185,7 @@ public class CliSiTef implements ICliSiTefListener{
 
             if(finishTransaction){
                 // Impressão
-                try { jsonResponse.put("status", "success"); } catch(Exception e){ throw new RuntimeException(e); }
+                try { jsonResponse.put("status", "success"); } catch(Exception e){ }
             } else{
                 try {
                     jsonResponse.put("status","error");
@@ -204,7 +193,7 @@ public class CliSiTef implements ICliSiTefListener{
                 } catch(JSONException e){}
 
             }
-            conn.send(jsonResponse.toString());
+            MainActivity.send(jsonResponse.toString());
         }
     }
 }

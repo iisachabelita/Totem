@@ -1,6 +1,5 @@
 package com.projeto.gertecserver;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.app.Activity;
 import android.view.ViewGroup;
@@ -9,16 +8,17 @@ import android.view.WindowInsetsController;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import androidx.core.content.ContextCompat;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity{
-    private WebView webView;
+    private static WebView webView;
+    private static final String LOGIN_URL = "https://isabelly-deeliv.felippebueno.com.br/totem/globais/login";
+    private boolean configureSent = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        // startService(new Intent(this,WebSocketService.class));
-        ContextCompat.startForegroundService(this,new Intent(this,WebSocketService.class));
 
         webView = new WebView(this);
 
@@ -32,9 +32,18 @@ public class MainActivity extends Activity{
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
-        // webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW); // Para WSS/HTTPS misto
 
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient(){
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+
+                if(!url.equals(LOGIN_URL) && !configureSent) {
+                    sendConfigureCommand();
+                    configureSent = true;
+                }
+            }
+        });
         setContentView(webView);
 
         // Fullscreen
@@ -45,15 +54,29 @@ public class MainActivity extends Activity{
             controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         }
 
-        webView.loadUrl("https://isabelly-deeliv.felippebueno.com.br/totem/globais/login");
+        webView.addJavascriptInterface(new WebViewInterface(this), "Bridge");
+        webView.loadUrl(LOGIN_URL);
     }
 
     @Override
     public void onBackPressed() {
         if(webView != null && webView.canGoBack()) {
-            webView.goBack(); // Navega na WebView
+            webView.goBack();
         } else{
-            super.onBackPressed(); // Fecha Activity normalmente
+            super.onBackPressed();
         }
+    }
+
+    private void sendConfigureCommand() {
+        try {
+            JSONObject jsonResponse = new JSONObject();
+            jsonResponse.put("command", "configure");
+            send(jsonResponse.toString());
+        } catch (JSONException ignored) {}
+    }
+
+    public static void send(String message){
+        String jsCode = "handleBridgeMessage(" + JSONObject.quote(message) + ")";
+        webView.evaluateJavascript(jsCode, null);
     }
 }
