@@ -47,13 +47,14 @@ public class CliSiTef implements ICliSiTefListener{
 
             if(clisitef.pinpad.isPresent()){
                 clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
+                clisitef.submitPendingMessages();
             }
         } else{
             Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
         }
     }
 
-    public void transaction(JSONObject parameters){
+    public void transaction(JSONObject parameters) throws Exception {
         modalidade = parameters.optInt("modalidade");
         valor = parameters.optString("valor");
         docFiscal = parameters.optString("docFiscal");
@@ -65,9 +66,7 @@ public class CliSiTef implements ICliSiTefListener{
         retry = 0;
         finishTransaction = false;
 
-        int pendingMessages = clisitef.submitPendingMessages();
-
-        if(pendingMessages == 0){
+        if(clisitef.pinpad.isPresent()){
             int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
             Log.d("CliSiTef", "START TRANSACTION: " + status);
         }
