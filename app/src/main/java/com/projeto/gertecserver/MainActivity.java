@@ -59,15 +59,6 @@ public class MainActivity extends Activity{
         webView.loadUrl(LOGIN_URL);
     }
 
-    @Override
-    public void onBackPressed() {
-        if(webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else{
-            super.onBackPressed();
-        }
-    }
-
     private void sendConfigureCommand() {
         try {
             JSONObject jsonResponse = new JSONObject();
