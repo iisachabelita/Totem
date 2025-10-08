@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -13,8 +15,9 @@ import org.json.JSONObject;
 
 public class MainActivity extends Activity{
     private static WebView webView;
-    // private static final String LOGIN_URL = "https://www.deeliv.app/totem/globais/login";
+
     private static final String LOGIN_URL = "https://isabelly-deeliv.felippebueno.com.br/totem/globais/login";
+    // private static final String LOGIN_URL = "https://www.deeliv.app/totem/globais/login";
     private boolean configureSent = false;
 
     @Override
@@ -22,41 +25,69 @@ public class MainActivity extends Activity{
         super.onCreate(savedInstanceState);
 
         webView = new WebView(this);
-
-        // Fullscreen
         webView.setLayoutParams(new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
         ));
+        setContentView(webView);
 
         // Configura WebView
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
-        webSettings.setDomStorageEnabled(true);
+        webSettings.setDomStorageEnabled(true); //
+        webSettings.setDatabaseEnabled(true); //
+        // webSettings.setAppCacheEnabled(true); //
+        webSettings.setAllowFileAccess(true); //
+        webSettings.setAllowContentAccess(true); //
+        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW); //
+        webSettings.setLoadsImagesAutomatically(true); //
+        webSettings.setMediaPlaybackRequiresUserGesture(false); //
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(true); //
+        webSettings.setUseWideViewPort(true); //
+        webSettings.setLoadWithOverviewMode(true); //
+        webSettings.setBuiltInZoomControls(false); //
+        webSettings.setSupportZoom(false); //
+        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT); //
+        webSettings.setUserAgentString(
+            webSettings.getUserAgentString() + " Chrome/" + android.os.Build.VERSION.RELEASE //
+        );
+        webSettings.setDomStorageEnabled(true); //
+        webSettings.setDatabaseEnabled(true); //
+
+        // Habilita WebGL, ES6+, e recursos experimentais
+        WebView.setWebContentsDebuggingEnabled(true); //
+        // Força aceleração de hardware (muitas animações dependem disso)
+        webView.setLayerType(WebView.LAYER_TYPE_HARDWARE, null); //
 
         webView.setWebViewClient(new WebViewClient(){
             @Override
-            public void onPageFinished(WebView view, String url) {
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request){
+                return false; //
+            }
+            @Override
+            public void onPageFinished(WebView view, String url){
                 super.onPageFinished(view, url);
 
-                if(!url.equals(LOGIN_URL) && !configureSent) {
+                if(!url.equals(LOGIN_URL) && !configureSent){
                     sendConfigureCommand();
                     configureSent = true;
                 }
             }
         });
-        setContentView(webView);
 
-        // Fullscreen
-        getWindow().setDecorFitsSystemWindows(false);
-        WindowInsetsController controller = getWindow().getInsetsController();
-        if(controller != null){
-            controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-            controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-        }
+        webView.setWebChromeClient(new WebChromeClient()); //
 
         webView.addJavascriptInterface(new WebViewInterface(this), "Bridge");
-        webView.loadUrl(LOGIN_URL);
+
+         // Fullscreen
+         getWindow().setDecorFitsSystemWindows(false);
+         WindowInsetsController controller = getWindow().getInsetsController();
+         if(controller != null){
+             controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+             controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+         }
+
+         webView.loadUrl(LOGIN_URL);
     }
 
     private void sendConfigureCommand() {
