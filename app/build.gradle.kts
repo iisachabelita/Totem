@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.projeto.gertecserver"
+    namespace = "com.projeto.totemserver"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.projeto.gertecserver"
+        applicationId = "com.projeto.totemserver"
         minSdk = 33
         targetSdk = 35
         versionCode = 1

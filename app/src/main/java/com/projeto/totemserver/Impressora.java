@@ -1,4 +1,4 @@
-package com.projeto.gertecserver;
+package com.projeto.totemserver;
 
 import static br.com.gertec.easylayer.printer.Alignment.CENTER;
 import static br.com.gertec.easylayer.printer.Alignment.LEFT;

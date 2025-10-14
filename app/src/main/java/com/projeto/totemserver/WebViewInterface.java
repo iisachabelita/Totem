@@ -1,4 +1,4 @@
-package com.projeto.gertecserver;
+package com.projeto.totemserver;
 
 import android.content.Context;
 import android.webkit.JavascriptInterface;

@@ -1,4 +1,4 @@
-package com.projeto.gertecserver;
+package com.projeto.totemserver;
 
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CASHIER_CUSTOMER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CONFIRMATION;
@@ -45,10 +45,10 @@ public class CliSiTef implements ICliSiTefListener{
         if(config == 0){
             Log.d("CliSiTef", "CliSiTef configurado com sucesso");
 
-            if(clisitef.pinpad.isPresent()){
-                clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
-                clisitef.submitPendingMessages();
-            }
+//            if(clisitef.pinpad.isPresent()){
+//                clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
+//                clisitef.submitPendingMessages();
+//            }
         } else{
             Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
         }
@@ -104,7 +104,7 @@ public class CliSiTef implements ICliSiTefListener{
                         try {
                             JSONObject jsonResponse = new JSONObject();
                             jsonResponse.put("message","Não foi possível ler o cartão. Tente novamente usando outra forma: insira, aproxime ou passe na tarja.");
-                            MainActivity.send(jsonResponse.toString());
+                            MainActivity.sendToJS(jsonResponse);
                         } catch(JSONException e){}
                     } else{
                         confirm = "1"; // Cancela
@@ -119,7 +119,7 @@ public class CliSiTef implements ICliSiTefListener{
                 try {
                     JSONObject jsonResponse = new JSONObject();
                     jsonResponse.put("message",new String(input));
-                    MainActivity.send(jsonResponse.toString());
+                    MainActivity.sendToJS(jsonResponse);
                 } catch(JSONException e){}
                 break;
             case CMD_GET_FIELD_CURRENCY: // 34
@@ -135,7 +135,7 @@ public class CliSiTef implements ICliSiTefListener{
                 try {
                     JSONObject jsonResponse = new JSONObject();
                     jsonResponse.put("message","");
-                    MainActivity.send(jsonResponse.toString());
+                    MainActivity.sendToJS(jsonResponse);
                 } catch(JSONException e){}
             }
         }
@@ -192,7 +192,7 @@ public class CliSiTef implements ICliSiTefListener{
                 } catch(JSONException e){}
 
             }
-            MainActivity.send(jsonResponse.toString());
+            MainActivity.sendToJS(jsonResponse);
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.projeto.gertecserver;
+package com.projeto.totemserver;
 
 import android.app.Activity;
 import android.content.Intent;

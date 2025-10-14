@@ -25,5 +25,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "GertecServer"
+rootProject.name = "TotemServer"
 include(":app")
