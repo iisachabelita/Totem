@@ -7,6 +7,7 @@ import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_MENU_OPTION;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_PRESS_ANY_KEY;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER_CUSTOMER;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -19,15 +20,10 @@ import br.com.softwareexpress.sitef.android.ICliSiTefListener;
 public class CliSiTef implements ICliSiTefListener{
     private final Context context;
     private final br.com.softwareexpress.sitef.android.CliSiTef clisitef;
-    private int modalidade;
-    private String valor;
-    private String docFiscal;
-    private String dataFiscal;
-    private String horaFiscal;
-    private String operador;
-    private String restricoes;
     private int retry = 0;
     public boolean finishTransaction;
+    private SharedPreferences sharedPreferences;
+    private Boolean firstTransaction = true;
 
     public CliSiTef(Context context){
         this.context = context.getApplicationContext();
@@ -37,39 +33,75 @@ public class CliSiTef implements ICliSiTefListener{
         String IPSiTef = parameters.optString("IPSiTef");
         String IdLoja = parameters.optString("IdLoja");
         String IdTerminal = parameters.optString("IdTerminal");
-        // String ParametrosAdicionais = "[TipoPinPad=ANDROID_USB;TipoComunicacaoExterna=SSL;“CaminhoCertificadoCA=ca_cert.pem”;]";
-        String ParametrosAdicionais = "[TipoPinPad=ANDROID_USB;]";
+        String ParametrosAdicionais = parameters.optString("ParametrosAdicionais");
 
         int config = clisitef.configure(IPSiTef,IdLoja,IdTerminal,ParametrosAdicionais);
 
         if(config == 0){
             Log.d("CliSiTef", "CliSiTef configurado com sucesso");
 
-//            if(clisitef.pinpad.isPresent()){
-//                clisitef.pinpad.setDisplayMessage(parameters.optString("mensagemPadrao"));
-//                clisitef.submitPendingMessages();
-//            }
-        } else{
-            Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config);
-        }
+            // Verificando se há transações pendentes
+            SharedPreferences prefs = context.getSharedPreferences("CliSiTef", Context.MODE_PRIVATE);
+
+            try {
+                int returnPendingTransactions = clisitef.getQttPendingTransactions(
+                        prefs.getString("dataFiscal", ""),
+                        prefs.getString("docFiscal", ""));
+                if(returnPendingTransactions > 0){
+                    // Caso tiver trnasações pendentes, irá ser cancelada
+                    clisitef.finishTransaction(this,
+                            prefs.getInt("valor", 0),
+                            prefs.getString("docFiscal", ""),
+                            prefs.getString("dataFiscal", ""),
+                            prefs.getString("horaFiscal", ""),
+                            prefs.getString("ParametrosAdicionais", ParametrosAdicionais));
+
+                    // clisitef.submitPendingMessages();
+                }
+            } catch(Exception e){ throw new RuntimeException(e); }
+
+            prefs.edit().putString("mensagemPadrao",parameters.optString("mensagemPadrao")).apply();
+            prefs.edit().putString("ParametrosAdicionais",parameters.optString("ParametrosAdicionais")).apply();
+        } else{ Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config); }
+    }
+
+    public void configurarPinpad(){
+        // SharedPreferences
+        SharedPreferences prefs = context.getSharedPreferences("CliSiTef", Context.MODE_PRIVATE);
+        String mensagem = prefs.getString("mensagemPadrao","");
+
+        try {
+            if(clisitef.pinpad.isPresent()){
+                clisitef.pinpad.setDisplayMessage(mensagem);
+            }
+            firstTransaction = false;
+        } catch (Exception e){ throw new RuntimeException(e); }
     }
 
     public void transaction(JSONObject parameters) throws Exception {
-        modalidade = parameters.optInt("modalidade");
-        valor = parameters.optString("valor");
-        docFiscal = parameters.optString("docFiscal");
-        dataFiscal = new SimpleDateFormat("yyyyMMdd").format(new Date());
-        horaFiscal = new SimpleDateFormat("HHmmss").format(new Date());
-        operador = parameters.optString("operador");
-        restricoes = parameters.optString("restricoes","");
+        int modalidade = parameters.optInt("modalidade");
+        String valor = parameters.optString("valor");
+        String docFiscal = parameters.optString("docFiscal","");
+        String dataFiscal = new SimpleDateFormat("yyyyMMdd").format(new Date());
+        String horaFiscal = new SimpleDateFormat("HHmmss").format(new Date());
+        String operador = parameters.optString("operador","");
+        String restricoes = parameters.optString("restricoes","");
+
+        SharedPreferences prefs = context.getSharedPreferences("CliSiTef", Context.MODE_PRIVATE);
+
+        prefs.edit().putInt("modalidade",modalidade).apply();
+        prefs.edit().putString("valor",valor).apply();
+        prefs.edit().putString("docFiscal",docFiscal).apply();
+        prefs.edit().putString("dataFiscal",dataFiscal).apply();
+        prefs.edit().putString("horaFiscal",horaFiscal).apply();
+        prefs.edit().putString("operador",operador).apply();
+        prefs.edit().putString("restricoes",restricoes).apply();
 
         retry = 0;
         finishTransaction = false;
 
-        if(clisitef.pinpad.isPresent()){
-            int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
-            Log.d("CliSiTef", "START TRANSACTION: " + status);
-        }
+        int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
+        Log.d("CliSiTef", "START TRANSACTION: " + status);
     }
 
     @Override
@@ -125,7 +157,7 @@ public class CliSiTef implements ICliSiTefListener{
             case CMD_GET_FIELD_CURRENCY: // 34
                 // Valor monetário
                 switch(fieldId){
-                    case 504:
+                    case 504: // Taxa de Serviço
                         clisitef.continueTransaction("0");
                         return;
                 }
@@ -154,7 +186,10 @@ public class CliSiTef implements ICliSiTefListener{
         if(stage == 1 && resultCode == 0){
             try {
                 clisitef.finishTransaction(1);
+
                 finishTransaction = true;
+                // Salvando a data da transação feita para verificar se há transação pendente
+                SharedPreferences prefs = context.getSharedPreferences("CliSiTef", Context.MODE_PRIVATE);
             } catch(Exception e){ }
         }
 
@@ -190,9 +225,10 @@ public class CliSiTef implements ICliSiTefListener{
                     jsonResponse.put("status","error");
                     jsonResponse.put("erro",erro);
                 } catch(JSONException e){}
-
             }
+
             MainActivity.sendToJS(jsonResponse);
+            if(firstTransaction){ configurarPinpad(); }
         }
     }
 }

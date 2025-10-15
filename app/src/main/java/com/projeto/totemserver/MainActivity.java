@@ -1,6 +1,7 @@
 package com.projeto.totemserver;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.WindowInsets;
@@ -64,7 +65,6 @@ public class MainActivity extends Activity {
             switch(command){
                 case "configure":
                     if(!configureSent){
-                        Log.d("Bridge", "Configurar totem: " + payload);
                         clisitef = new CliSiTef(this);
                         clisitef.configurarCliSiTef(payload);
                         new Impressora(this).configurarImpressora(json);
@@ -72,11 +72,9 @@ public class MainActivity extends Activity {
                     }
                     break;
                 case "transaction":
-                    Log.d("Bridge", "Iniciando transação: " + payload);
                     clisitef.transaction(payload);
                     break;
                 case "printer":
-                    Log.d("Bridge", "Imprimir: " + payload);
                     Impressora impressora = new Impressora(this);
                     JSONObject parameters = payload.optJSONObject("parameters");
                     JSONArray items = payload.optJSONArray("items");

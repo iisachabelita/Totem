@@ -1,6 +1,10 @@
 [Geral]
-TransacoesHabilitadas=16;20;22;26;3014;3192;3193;3624;3625;3626
+TransacoesHabilitadas=16;20;22;26;121;4178;3014;3192;3193;3624;3625;3626
 ; IdentificaMensagens=1
+
+[CliSiTefI]
+DiretorioTrace=./files
+HabilitaTrace=1
 
 [SiTef]
 ConexaoObrigatoria=1
@@ -9,6 +13,11 @@ TempoEsperaConexao=15 ; Tempo máximo (s) para a tentativa inicial de conexão c
 TempoAdicionalEspera=15 ; Tempo extra (s) de espera por respostas parciais ou intermediárias do servidor
 TempoEsperaDesfazimento=15 ; Tempo máximo (s) para tentar realizar o desfazimento de uma transação em caso de erro ou falha de comunicação antes da confirmação
 TempoEsperaConfirmacao=15 ; Tempo máximo (s) de espera pela confirmação da transação após a resposta do autorizador
+
+[PinPad]
+HabilitaTrace=1
+; ChaveTrace= <Neste campo deve ser informada uma chave fornecida pelo suporte
+técnico da Software Express>
 
 [TabTraducao]
 NomeArqTraducao=Mens.txt
