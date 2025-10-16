@@ -67,7 +67,7 @@ public class MainActivity extends Activity {
                     if(!configureSent){
                         clisitef = new CliSiTef(this);
                         clisitef.configurarCliSiTef(payload);
-                        new Impressora(this).configurarImpressora(json);
+                        new Impressora(this).configurarImpressora(payload);
                         configureSent = true;
                     }
                     break;

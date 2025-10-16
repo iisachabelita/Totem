@@ -50,15 +50,16 @@ public class CliSiTef implements ICliSiTefListener{
                 if(returnPendingTransactions > 0){
                     // Caso tiver trnasações pendentes, irá ser cancelada
                     clisitef.finishTransaction(this,
-                            prefs.getInt("valor", 0),
+                            // Caso queira aceitar a transação, basta mudar o ENUM (1)
+                            0,
                             prefs.getString("docFiscal", ""),
                             prefs.getString("dataFiscal", ""),
                             prefs.getString("horaFiscal", ""),
                             prefs.getString("ParametrosAdicionais", ParametrosAdicionais));
-
-                    // clisitef.submitPendingMessages();
                 }
             } catch(Exception e){ throw new RuntimeException(e); }
+
+            clisitef.submitPendingMessages();
 
             prefs.edit().putString("mensagemPadrao",parameters.optString("mensagemPadrao")).apply();
             prefs.edit().putString("ParametrosAdicionais",parameters.optString("ParametrosAdicionais")).apply();
@@ -100,6 +101,10 @@ public class CliSiTef implements ICliSiTefListener{
         retry = 0;
         finishTransaction = false;
 
+        // Trace
+//        int trace = clisitef.startTransaction(this, 121, "0", "", "", "", "", "");
+//        Log.d("CliSiTef", "TRACE: " + trace);
+
         int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
         Log.d("CliSiTef", "START TRANSACTION: " + status);
     }
@@ -117,6 +122,7 @@ public class CliSiTef implements ICliSiTefListener{
 
         if(new String(input).equals("13 - Operação Cancelada")){
             clisitef.abortTransaction(-1);
+            // try { clisitef.finishTransaction(0); } catch (Exception e) { throw new RuntimeException(e); }
         }
 
         if(stage == 1){
