@@ -74,6 +74,9 @@ public class MainActivity extends Activity {
                 case "transaction":
                     clisitef.transaction(payload);
                     break;
+                case "cancelTransaction":
+                    clisitef.clisitef.abortTransaction(-1);
+                    break;
                 case "printer":
                     Impressora impressora = new Impressora(this);
                     JSONObject parameters = payload.optJSONObject("parameters");
@@ -81,7 +84,6 @@ public class MainActivity extends Activity {
                     impressora.imprimirComprovante(items, parameters);
                     break;
             }
-
         } catch (Exception e){ Log.e("Bridge", "Erro ao processar mensagem do JS", e); }
     }
 

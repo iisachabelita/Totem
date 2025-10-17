@@ -19,7 +19,7 @@ import br.com.softwareexpress.sitef.android.ICliSiTefListener;
 
 public class CliSiTef implements ICliSiTefListener{
     private final Context context;
-    private final br.com.softwareexpress.sitef.android.CliSiTef clisitef;
+    public final br.com.softwareexpress.sitef.android.CliSiTef clisitef;
     private int retry = 0;
     public boolean finishTransaction;
     private SharedPreferences sharedPreferences;
@@ -185,9 +185,7 @@ public class CliSiTef implements ICliSiTefListener{
         Log.d("CliSiTef","onTransactionResult, stage " + stage + " resultCode: " + resultCode);
 
         JSONObject jsonResponse = new JSONObject();
-        try {
-            jsonResponse.put("command", "onTransactionResult");
-        } catch(JSONException e) {}
+        try { jsonResponse.put("command", "onTransactionResult"); } catch(JSONException e) {}
 
         if(stage == 1 && resultCode == 0){
             try {
@@ -200,7 +198,7 @@ public class CliSiTef implements ICliSiTefListener{
         }
 
         if(resultCode != 0 || stage == 2 ){
-            String erro;
+            String erro = "";
             switch(resultCode){
                 case 0:
                     erro = "Pagamento aprovado!";
@@ -209,6 +207,9 @@ public class CliSiTef implements ICliSiTefListener{
                 case -6:
                 case -15:
                     erro = "Pagamento cancelado.";
+                    break;
+                case -5:
+                    erro = "Sem comunicação.";
                     break;
                 case -40:
                 case -41:
@@ -225,12 +226,12 @@ public class CliSiTef implements ICliSiTefListener{
 
             if(finishTransaction){
                 // Impressão
-                try { jsonResponse.put("status", "success"); } catch(Exception e){ }
+                try { jsonResponse.put("status", "success"); } catch(Exception e){}
             } else{
                 try {
                     jsonResponse.put("status","error");
                     jsonResponse.put("erro",erro);
-                } catch(JSONException e){}
+                } catch(JSONException e){ e.printStackTrace(); }
             }
 
             MainActivity.sendToJS(jsonResponse);
