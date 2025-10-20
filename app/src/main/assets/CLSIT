@@ -1,14 +1,13 @@
 [Geral]
 ;121 - (Enviar trace).
-TransacoesHabilitadas=16;20;22;26;4178;3014;3192;3193;3624;3625;3626
-TransacoesAdicionaisHabilitadas=121
+TransacoesAdicionaisHabilitadas=16;20;22;26;121;3014;3192;3193;3624;3625;3626;4178
+DataEmAmbienteDeDesenvolvimento=20251020
 
 [CliSiTef]
 DiretorioTrace=./files
 HabilitaTrace=1
-;Habilitar para produção o Trace Rotativo ou quando for testar a funcionalidade Trace Rotativo
-;TraceRotativo=20
-;TamanhoTraceRotativo=122880
+TraceRotativo=20
+TamanhoTraceRotativo=122880
 
 [CliSiTefI]
 DiretorioTrace=./files/
@@ -16,15 +15,4 @@ HabilitaTrace=1
 
 [SiTef]
 ConexaoObrigatoria=1
-MantemConexaoAtiva=1
-TempoEsperaConexao=15 ; Tempo máximo (s) para a tentativa inicial de conexão com o servidor
-TempoAdicionalEspera=15 ; Tempo extra (s) de espera por respostas parciais ou intermediárias do servidor
-TempoEsperaDesfazimento=15 ; Tempo máximo (s) para tentar realizar o desfazimento de uma transação em caso de erro ou falha de comunicação antes da confirmação
-TempoEsperaConfirmacao=15 ; Tempo máximo (s) de espera pela confirmação da transação após a resposta do autorizador
-
-[PinPad]
-; HabilitaTrace=1
-; ChaveTrace= <Neste campo deve ser informada uma chave fornecida pelo suporte técnico da Software Express>
-
-[TabTraducao]
-; NomeArqTraducao=Mens.txt
+; MantemConexaoAtiva=1

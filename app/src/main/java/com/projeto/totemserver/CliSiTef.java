@@ -20,10 +20,9 @@ import br.com.softwareexpress.sitef.android.ICliSiTefListener;
 public class CliSiTef implements ICliSiTefListener{
     private final Context context;
     public final br.com.softwareexpress.sitef.android.CliSiTef clisitef;
-    private int retry = 0;
     public boolean finishTransaction;
-    private SharedPreferences sharedPreferences;
     private Boolean firstTransaction = true;
+    private boolean inTransaction = false;
 
     public CliSiTef(Context context){
         this.context = context.getApplicationContext();
@@ -45,13 +44,16 @@ public class CliSiTef implements ICliSiTefListener{
 
             try {
                 int returnPendingTransactions = clisitef.getQttPendingTransactions(
-                        prefs.getString("dataFiscal", ""),
-                        prefs.getString("docFiscal", ""));
+                    prefs.getString("dataFiscal", ""),
+                    prefs.getString("docFiscal", "")
+                );
+
                 if(returnPendingTransactions > 0){
                     // Caso tiver trnasações pendentes, irá ser cancelada
                     clisitef.finishTransaction(this,
-                            // Caso queira aceitar a transação, basta mudar o ENUM (1)
-                            0,
+                            // Recusar a transação, ENUM (0)
+                            // Aceitar a transação, ENUM (1)
+                            1,
                             prefs.getString("docFiscal", ""),
                             prefs.getString("dataFiscal", ""),
                             prefs.getString("horaFiscal", ""),
@@ -59,7 +61,21 @@ public class CliSiTef implements ICliSiTefListener{
                 }
             } catch(Exception e){ throw new RuntimeException(e); }
 
-            clisitef.submitPendingMessages();
+             clisitef.submitPendingMessages();
+
+            // Trace
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable(){
+                @Override
+                public void run(){
+                    if(!inTransaction){
+                        int trace = clisitef.startTransaction(CliSiTef.this, 121, prefs.getString("valor", ""), prefs.getString("docFiscal", ""), prefs.getString("dataFiscal", ""), prefs.getString("horaFiscal", ""), prefs.getString("operador", ""), prefs.getString("restricoes", ""));
+                        Log.d("CliSiTef", "TRACE automático executado: " + trace);
+                    }
+
+                    new Handler(Looper.getMainLooper()).postDelayed(this, 60000);
+                }
+            }, 60000);
+
 
             prefs.edit().putString("mensagemPadrao",parameters.optString("mensagemPadrao")).apply();
             prefs.edit().putString("ParametrosAdicionais",parameters.optString("ParametrosAdicionais")).apply();
@@ -98,13 +114,8 @@ public class CliSiTef implements ICliSiTefListener{
         prefs.edit().putString("operador",operador).apply();
         prefs.edit().putString("restricoes",restricoes).apply();
 
-        retry = 0;
         finishTransaction = false;
-
-        // Trace
-//        int trace = clisitef.startTransaction(this, 121, "0", "", "", "", "", "");
-//        Log.d("CliSiTef", "TRACE: " + trace);
-
+        inTransaction = true;
         int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
         Log.d("CliSiTef", "START TRANSACTION: " + status);
     }
@@ -132,24 +143,15 @@ public class CliSiTef implements ICliSiTefListener{
                     clisitef.continueTransaction("1");
                     return;
                 case CMD_CONFIRMATION:// 20
-                    // Erro leitura do cartão
-                    String confirm;
-
-                    if(retry < 3){
-                        confirm = "0"; // Confirma
-                        retry++;
-
-                        try {
-                            JSONObject jsonResponse = new JSONObject();
-                            jsonResponse.put("message","Não foi possível ler o cartão. Tente novamente usando outra forma: insira, aproxime ou passe na tarja.");
-                            MainActivity.sendToJS(jsonResponse);
-                        } catch(JSONException e){}
-                    } else{
-                        confirm = "1"; // Cancela
-                    }
+                    try {
+                        JSONObject jsonResponse = new JSONObject();
+                        jsonResponse.put("message",new String(input));
+                        MainActivity.sendToJS(jsonResponse);
+                    } catch(JSONException e){}
 
                     new Handler(Looper.getMainLooper()).postDelayed(() ->
-                        clisitef.continueTransaction(confirm),5000 // 5 segundos
+                            // "1" // Cancela
+                            clisitef.continueTransaction("0"),5000 // 5 segundos
                     );
                     return;
             case CMD_PRESS_ANY_KEY: // 22
@@ -187,13 +189,12 @@ public class CliSiTef implements ICliSiTefListener{
         JSONObject jsonResponse = new JSONObject();
         try { jsonResponse.put("command", "onTransactionResult"); } catch(JSONException e) {}
 
+        SharedPreferences prefs = context.getSharedPreferences("CliSiTef", Context.MODE_PRIVATE);
+
         if(stage == 1 && resultCode == 0){
             try {
                 clisitef.finishTransaction(1);
-
                 finishTransaction = true;
-                // Salvando a data da transação feita para verificar se há transação pendente
-                SharedPreferences prefs = context.getSharedPreferences("CliSiTef", Context.MODE_PRIVATE);
             } catch(Exception e){ }
         }
 
@@ -227,15 +228,23 @@ public class CliSiTef implements ICliSiTefListener{
             if(finishTransaction){
                 // Impressão
                 try { jsonResponse.put("status", "success"); } catch(Exception e){}
-            } else{
+                MainActivity.sendToJS(jsonResponse);
+            } else if(resultCode == 0){
+                try {
+                    jsonResponse.put("status","pendingOrder");
+                    jsonResponse.put("orderId",prefs.getString("docFiscal", ""));
+                } catch(JSONException e){ e.printStackTrace(); }
+                MainActivity.sendToJS(jsonResponse);
+            } else if(resultCode != -100){
                 try {
                     jsonResponse.put("status","error");
                     jsonResponse.put("erro",erro);
                 } catch(JSONException e){ e.printStackTrace(); }
+                MainActivity.sendToJS(jsonResponse);
             }
 
-            MainActivity.sendToJS(jsonResponse);
             if(firstTransaction){ configurarPinpad(); }
+            inTransaction = false;
         }
     }
 }
