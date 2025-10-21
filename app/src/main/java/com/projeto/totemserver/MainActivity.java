@@ -75,6 +75,7 @@ public class MainActivity extends Activity {
                     clisitef.transaction(payload);
                     break;
                 case "cancelTransaction":
+                    // 1 - volta ao menu anterior; -1 - cancela operação;
                     clisitef.clisitef.abortTransaction(-1);
                     break;
                 case "printer":

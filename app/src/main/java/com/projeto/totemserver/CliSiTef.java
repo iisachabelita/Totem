@@ -1,7 +1,9 @@
 package com.projeto.totemserver;
 
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_ABORT_REQUEST;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CASHIER_CUSTOMER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CONFIRMATION;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_CURRENCY;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_MENU_OPTION;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_PRESS_ANY_KEY;
@@ -15,14 +17,19 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import br.com.softwareexpress.sitef.android.ICliSiTefListener;
 
 public class CliSiTef implements ICliSiTefListener{
     private final Context context;
     public final br.com.softwareexpress.sitef.android.CliSiTef clisitef;
+    private final Map<String, Integer> retryMap = new HashMap<>();
     public boolean finishTransaction;
     private Boolean firstTransaction = true;
     private boolean inTransaction = false;
+    private boolean isTrace;
 
     public CliSiTef(Context context){
         this.context = context.getApplicationContext();
@@ -64,18 +71,19 @@ public class CliSiTef implements ICliSiTefListener{
              clisitef.submitPendingMessages();
 
             // Trace
-            new Handler(Looper.getMainLooper()).postDelayed(new Runnable(){
-                @Override
-                public void run(){
-                    if(!inTransaction){
-                        int trace = clisitef.startTransaction(CliSiTef.this, 121, prefs.getString("valor", ""), prefs.getString("docFiscal", ""), prefs.getString("dataFiscal", ""), prefs.getString("horaFiscal", ""), prefs.getString("operador", ""), prefs.getString("restricoes", ""));
-                        Log.d("CliSiTef", "TRACE automático executado: " + trace);
-                    }
-
-                    new Handler(Looper.getMainLooper()).postDelayed(this, 60000);
-                }
-            }, 60000);
-
+//            new Handler(Looper.getMainLooper()).postDelayed(new Runnable(){
+//                @Override
+//                public void run(){
+//                    if(!inTransaction){
+//                        int trace = clisitef.startTransaction(CliSiTef.this, 121, "0", "", "", "", "", "");
+//                        Log.d("CliSiTef", "TRACE automático executado: " + trace);
+//                        isTrace = true;
+//                    }
+//
+//                    new Handler(Looper.getMainLooper()).postDelayed(this, 60000);
+//                }
+//            }, 60000); // Envio de trace a cada 1 minuto - em homologação
+            // }, 600000); // Envio de trace a cada 10 minutos
 
             prefs.edit().putString("mensagemPadrao",parameters.optString("mensagemPadrao")).apply();
             prefs.edit().putString("ParametrosAdicionais",parameters.optString("ParametrosAdicionais")).apply();
@@ -114,8 +122,10 @@ public class CliSiTef implements ICliSiTefListener{
         prefs.edit().putString("operador",operador).apply();
         prefs.edit().putString("restricoes",restricoes).apply();
 
+        retryMap.clear();
         finishTransaction = false;
         inTransaction = true;
+        isTrace = false;
         int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
         Log.d("CliSiTef", "START TRANSACTION: " + status);
     }
@@ -141,17 +151,31 @@ public class CliSiTef implements ICliSiTefListener{
                 case CMD_GET_MENU_OPTION: // 21
                     // Débito e Crédito à vista
                     clisitef.continueTransaction("1");
+
+                    // Crédito parcelado pelo Estabelecimento(2)/Administradora(3)
+                    // clisitef.continueTransaction("2"); // clisitef.continueTransaction("3");
                     return;
                 case CMD_CONFIRMATION:// 20
-                    try {
-                        JSONObject jsonResponse = new JSONObject();
-                        jsonResponse.put("message",new String(input));
-                        MainActivity.sendToJS(jsonResponse);
-                    } catch(JSONException e){}
+                    String inputMsg = new String(input).trim();
+                    String confirm;
+
+                    int count = retryMap.getOrDefault(inputMsg, 0);
+
+                    if(count < 3){
+                        confirm = "0"; // Confirma
+                        retryMap.put(inputMsg, count + 1);
+
+                        try {
+                            JSONObject jsonResponse = new JSONObject();
+                            jsonResponse.put("message", inputMsg);
+                            MainActivity.sendToJS(jsonResponse);
+                        } catch(JSONException e){ e.printStackTrace(); }
+                    } else{
+                        confirm = "1"; // Cancela
+                    }
 
                     new Handler(Looper.getMainLooper()).postDelayed(() ->
-                            // "1" // Cancela
-                            clisitef.continueTransaction("0"),5000 // 5 segundos
+                            clisitef.continueTransaction(confirm),5000 // 5 segundos
                     );
                     return;
             case CMD_PRESS_ANY_KEY: // 22
@@ -177,7 +201,15 @@ public class CliSiTef implements ICliSiTefListener{
                     jsonResponse.put("message","");
                     MainActivity.sendToJS(jsonResponse);
                 } catch(JSONException e){}
-            }
+                break;
+            // case CMD_ABORT_REQUEST: // 23
+                // clisitef.abortTransaction(-1);
+                // break;
+            // case CMD_GET_FIELD: // 30
+                // num parcelas
+                // clisitef.continueTransaction("2");
+                // return;
+             }
         }
         clisitef.continueTransaction("");
     }
@@ -224,22 +256,30 @@ public class CliSiTef implements ICliSiTefListener{
                     }
                     break;
             }
-
-            if(finishTransaction){
+            if(isTrace){
+                isTrace = false;
+            } else if(finishTransaction){
                 // Impressão
-                try { jsonResponse.put("status", "success"); } catch(Exception e){}
-                MainActivity.sendToJS(jsonResponse);
-            } else if(resultCode == 0){
                 try {
-                    jsonResponse.put("status","pendingOrder");
-                    jsonResponse.put("orderId",prefs.getString("docFiscal", ""));
-                } catch(JSONException e){ e.printStackTrace(); }
+                    jsonResponse.put("status", "success");
+                } catch (Exception e) {
+                }
                 MainActivity.sendToJS(jsonResponse);
-            } else if(resultCode != -100){
+            } else if (resultCode == 0) {
                 try {
-                    jsonResponse.put("status","error");
-                    jsonResponse.put("erro",erro);
-                } catch(JSONException e){ e.printStackTrace(); }
+                    jsonResponse.put("status", "pendingOrder");
+                    jsonResponse.put("orderId", prefs.getString("docFiscal", ""));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                MainActivity.sendToJS(jsonResponse);
+            } else if (resultCode != -100) {
+                try {
+                    jsonResponse.put("status", "error");
+                    jsonResponse.put("erro", erro);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
                 MainActivity.sendToJS(jsonResponse);
             }
 

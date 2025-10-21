@@ -1,16 +1,16 @@
 [Geral]
 ;121 - (Enviar trace).
 TransacoesAdicionaisHabilitadas=16;20;22;26;121;3014;3192;3193;3624;3625;3626;4178
-DataEmAmbienteDeDesenvolvimento=20251020
+DataEmAmbienteDeDesenvolvimento=20251022
+
 
 [CliSiTef]
 DiretorioTrace=./files
 HabilitaTrace=1
-TraceRotativo=20
-TamanhoTraceRotativo=122880
+TraceRotativo=50
 
 [CliSiTefI]
-DiretorioTrace=./files/
+DiretorioTrace=./files
 HabilitaTrace=1
 
 [SiTef]
