@@ -84,6 +84,9 @@ public class MainActivity extends Activity {
                     JSONArray items = payload.optJSONArray("items");
                     impressora.imprimirComprovante(items, parameters);
                     break;
+                case "tratativas":
+                    int teste = clisitef.clisitef.continueTransaction(payload.getString("message"));
+                    Log.d("CliSiTef", "COMANDO RECEBIDO: " + payload.getString("message"));
             }
         } catch (Exception e){ Log.e("Bridge", "Erro ao processar mensagem do JS", e); }
     }

@@ -79,11 +79,15 @@ public class CliSiTef implements ICliSiTefListener{
 //                        Log.d("CliSiTef", "TRACE automático executado: " + trace);
 //                        isTrace = true;
 //                    }
-//
-//                    new Handler(Looper.getMainLooper()).postDelayed(this, 60000);
 //                }
-//            }, 60000); // Envio de trace a cada 1 minuto - em homologação
-            // }, 600000); // Envio de trace a cada 10 minutos
+//            }, 60000);
+
+            // Reimpressão específica
+            // Cancelamento
+//            new Handler(Looper.getMainLooper()).postDelayed(() ->
+//                    clisitef.startTransaction(CliSiTef.this, 113, "0", "", "", "", "", ""),30000
+//                    clisitef.startTransaction(CliSiTef.this, 200, "0", "", "", "", "", ""),30000
+//            );
 
             prefs.edit().putString("mensagemPadrao",parameters.optString("mensagemPadrao")).apply();
             prefs.edit().putString("ParametrosAdicionais",parameters.optString("ParametrosAdicionais")).apply();
@@ -151,16 +155,12 @@ public class CliSiTef implements ICliSiTefListener{
                 case CMD_GET_MENU_OPTION: // 21
                     // Débito e Crédito à vista
                     clisitef.continueTransaction("1");
-
-                    // Crédito parcelado pelo Estabelecimento(2)/Administradora(3)
-                    // clisitef.continueTransaction("2"); // clisitef.continueTransaction("3");
                     return;
                 case CMD_CONFIRMATION:// 20
                     String inputMsg = new String(input).trim();
                     String confirm;
 
                     int count = retryMap.getOrDefault(inputMsg, 0);
-
                     if(count < 3){
                         confirm = "0"; // Confirma
                         retryMap.put(inputMsg, count + 1);
@@ -175,41 +175,39 @@ public class CliSiTef implements ICliSiTefListener{
                     }
 
                     new Handler(Looper.getMainLooper()).postDelayed(() ->
-                            clisitef.continueTransaction(confirm),5000 // 5 segundos
+                        clisitef.continueTransaction(confirm),5000 // 5 segundos
                     );
                     return;
-            case CMD_PRESS_ANY_KEY: // 22
-            case CMD_SHOW_MSG_CASHIER_CUSTOMER: // 3
-                try {
+                case CMD_PRESS_ANY_KEY: // 22
+                case CMD_SHOW_MSG_CASHIER_CUSTOMER: // 3
+                    try {
                     JSONObject jsonResponse = new JSONObject();
                     jsonResponse.put("message",new String(input));
                     MainActivity.sendToJS(jsonResponse);
                 } catch(JSONException e){}
-                break;
-            case CMD_GET_FIELD_CURRENCY: // 34
-                // Valor monetário
-                switch(fieldId){
-                    case 504: // Taxa de Serviço
-                        clisitef.continueTransaction("0");
-                        return;
-                }
-                break;
-            case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
-                // Limpa mensagem enviada pelo CMD_PRESS_ANY_KEY & CMD_SHOW_MSG_CASHIER_CUSTOMER
-                try {
-                    JSONObject jsonResponse = new JSONObject();
-                    jsonResponse.put("message","");
-                    MainActivity.sendToJS(jsonResponse);
-                } catch(JSONException e){}
-                break;
-            // case CMD_ABORT_REQUEST: // 23
-                // clisitef.abortTransaction(-1);
-                // break;
-            // case CMD_GET_FIELD: // 30
-                // num parcelas
-                // clisitef.continueTransaction("2");
-                // return;
-             }
+                    break;
+                case CMD_GET_FIELD_CURRENCY: // 34
+                    // Valor monetário
+                    switch(fieldId){
+                        case 504: // Taxa de Serviço
+                            clisitef.continueTransaction("0");
+                            return;
+                    }
+                    return;
+//                    break;
+                case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
+                    try {
+                        JSONObject jsonResponse = new JSONObject();
+                        jsonResponse.put("message","");
+                        MainActivity.sendToJS(jsonResponse);
+                    } catch(JSONException e){}
+                    break;
+                // case CMD_ABORT_REQUEST: // 23
+                    // esperando ação do usuário
+                    // break;
+                 case CMD_GET_FIELD: // 30
+                     return;
+            }
         }
         clisitef.continueTransaction("");
     }
