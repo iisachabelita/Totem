@@ -71,6 +71,7 @@ public class MainActivity extends Activity {
                         configureSent = true;
                     }
                     break;
+
                 case "transaction":
                     clisitef.transaction(payload);
                     break;
@@ -78,15 +79,18 @@ public class MainActivity extends Activity {
                     // 1 - volta ao menu anterior; -1 - cancela operação;
                     clisitef.clisitef.abortTransaction(-1);
                     break;
+
                 case "printer":
                     Impressora impressora = new Impressora(this);
                     JSONObject parameters = payload.optJSONObject("parameters");
                     JSONArray items = payload.optJSONArray("items");
                     impressora.imprimirComprovante(items, parameters);
                     break;
+
                 case "tratativas":
                     int teste = clisitef.clisitef.continueTransaction(payload.getString("message"));
                     Log.d("CliSiTef", "COMANDO RECEBIDO: " + payload.getString("message"));
+                    break;
             }
         } catch (Exception e){ Log.e("Bridge", "Erro ao processar mensagem do JS", e); }
     }

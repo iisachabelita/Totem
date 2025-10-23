@@ -73,6 +73,7 @@ public class Impressora implements Printer.Listener {
                 prefs.edit().putInt("fontSize", 20).apply();
                 prefs.edit().putInt("topHeight", 4).apply();
                 break;
+
             case 2:
                 prefs.edit().putInt("fontSize", 25).apply();
                 prefs.edit().putInt("topHeight", 6).apply();
@@ -80,6 +81,7 @@ public class Impressora implements Printer.Listener {
                 // prefs.edit().putInt("maxChars", 25).apply();
                 // prefs.edit().putInt("lineSpacing", 3).apply();
                 break;
+
             case 3:
                 prefs.edit().putInt("fontSize", 30).apply();
                 prefs.edit().putInt("topHeight", 8).apply();
