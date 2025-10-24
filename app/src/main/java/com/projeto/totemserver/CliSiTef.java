@@ -82,12 +82,14 @@ public class CliSiTef implements ICliSiTefListener{
             // 121 - Trace
             // 113 - Reimpressão específica
             // 200 - Cancelamento
+            // 122 - Carteira digital
+            // 123 - Cancelamento via Carteira Digital
 //            new Handler(Looper.getMainLooper()).postDelayed(() -> {
 //                try {
 //                    JSONObject params = new JSONObject();
-//                    params.put("modalidade", 113);
+//                    params.put("modalidade", 121);
 //                    transaction(params);
-//                    } catch (Exception e){ throw new RuntimeException(e); }
+//                } catch (Exception e){ throw new RuntimeException(e); }
 //            }, 30000);
         } else{ Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config); }
     }
@@ -162,6 +164,7 @@ public class CliSiTef implements ICliSiTefListener{
                 case CMD_GET_MENU_OPTION: // 21
                 case CMD_CONFIRMATION:// 20
                 case CMD_GET_FIELD: // 30
+                case CMD_GET_FIELD_CURRENCY: // 34
                     break;
 
                 // esperando ação do usuário
@@ -189,7 +192,7 @@ public class CliSiTef implements ICliSiTefListener{
                     jsonResponse.put("receipt",clisitef.getBuffer());
                     new Handler(Looper.getMainLooper()).postDelayed(() -> {
                         MainActivity.sendToJS(jsonResponse);
-                    }, 3000);
+                    }, 5000);
                 }
                 clisitef.continueTransaction("");
                 break;

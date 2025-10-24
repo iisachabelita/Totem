@@ -75,6 +75,7 @@ public class MainActivity extends Activity {
                 case "transaction":
                     clisitef.transaction(payload);
                     break;
+
                 case "cancelTransaction":
                     // 1 - volta ao menu anterior; -1 - cancela operação;
                     clisitef.clisitef.abortTransaction(-1);
@@ -88,7 +89,7 @@ public class MainActivity extends Activity {
                     break;
 
                 case "tratativas":
-                    int teste = clisitef.clisitef.continueTransaction(payload.getString("message"));
+                    clisitef.clisitef.continueTransaction(payload.getString("message"));
                     Log.d("CliSiTef", "COMANDO RECEBIDO: " + payload.getString("message"));
                     break;
             }
