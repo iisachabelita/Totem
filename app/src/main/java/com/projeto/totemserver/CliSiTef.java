@@ -152,11 +152,15 @@ public class CliSiTef implements ICliSiTefListener{
         } else{
             switch(command){
                 case CMD_RESULT_DATA: // 0
-                    if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor() || fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor()){
-                        JSONObject jsonResponse = new JSONObject();
-                        try { jsonResponse.put("receipt",clisitef.getBuffer());
-                        } catch (JSONException e){ throw new RuntimeException(e); }
-                        MainActivity.sendToJS(jsonResponse);
+                    if(
+                            // fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor() ||
+                            // fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor() ||
+                            fieldId == Transaction.CAMPO_NSU.getValor()
+                    ){
+                         JSONObject jsonResponse = new JSONObject();
+                         try { jsonResponse.put("nsu",clisitef.getBuffer());
+                         } catch (JSONException e){ throw new RuntimeException(e); }
+                         MainActivity.sendToJS(jsonResponse);
                     }
                     clisitef.continueTransaction("");
                     break;
@@ -188,11 +192,13 @@ public class CliSiTef implements ICliSiTefListener{
 
         switch(command){
             case CMD_RESULT_DATA: // 0
-                if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor() || fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor()){
-                    jsonResponse.put("receipt",clisitef.getBuffer());
-                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        MainActivity.sendToJS(jsonResponse);
-                    }, 5000);
+                if(
+                        // fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor() ||
+                        // fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor() ||
+                        fieldId == Transaction.CAMPO_NSU.getValor()
+                ){
+                    jsonResponse.put("nsu",clisitef.getBuffer());
+                    MainActivity.sendToJS(jsonResponse);
                 }
                 clisitef.continueTransaction("");
                 break;

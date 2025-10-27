@@ -2,7 +2,8 @@ package com.projeto.totemserver.enums;
 
 public enum Transaction {
         CAMPO_COMPROVANTE_CLIENTE(121),
-        CAMPO_COMPROVANTE_ESTAB(122);
+        CAMPO_COMPROVANTE_ESTAB(122),
+        CAMPO_NSU(134);
 
         private final int valor;
 
