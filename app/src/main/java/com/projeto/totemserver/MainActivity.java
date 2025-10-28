@@ -1,7 +1,6 @@
 package com.projeto.totemserver;
 
 import android.app.Activity;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.WindowInsets;
@@ -38,7 +37,7 @@ public class MainActivity extends Activity {
         geckoSession.setContentDelegate(new GeckoSession.ContentDelegate(){
             @Override
             public void onTitleChange(GeckoSession session, String title) {
-                if (title != null && title.startsWith("bridge:")) {
+            if (title != null && title.startsWith("bridge:")) {
                     String jsonStr = title.substring("bridge:".length());
                     handleBridgeMessage(jsonStr);
                 }
@@ -53,7 +52,12 @@ public class MainActivity extends Activity {
             controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         }
 
-        geckoSession.loadUri(LOGIN_URL);
+        loadFreshUrl();
+    }
+
+    private void loadFreshUrl(){
+        String url = LOGIN_URL + "?t=" + System.currentTimeMillis();
+        geckoSession.loadUri(url);
     }
 
     private void handleBridgeMessage(String jsonStr){
