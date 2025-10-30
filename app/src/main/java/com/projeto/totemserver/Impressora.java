@@ -1,5 +1,6 @@
 package com.projeto.totemserver;
 
+import static com.projeto.totemserver.MainActivity.clisitef;
 import static br.com.gertec.easylayer.printer.Alignment.CENTER;
 import static br.com.gertec.easylayer.printer.Alignment.LEFT;
 import android.content.Context;
@@ -224,47 +225,81 @@ public class Impressora implements Printer.Listener {
         printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
     }
 
+    public void imprimirComprovanteTransacao() throws PrinterException{
+        String comprovante = clisitef.CAMPO_COMPROVANTE_CLIENTE;
+        comprovante = comprovante.trim();
+
+        if(comprovante == null || comprovante.isEmpty()) return;
+
+        List<String> linhas = new ArrayList<>();
+        for(int i = 0; i < comprovante.length(); i += maxChars){
+            int fim = Math.min(i + maxChars, comprovante.length());
+            linhas.add(comprovante.substring(i, fim));
+        }
+
+        for(String linha : linhas) printFormat(linha, LEFT, false);
+
+        // Via do estabelecimento
+        printer.scrollPaper(1);
+
+        String comprovanteEstab = clisitef.CAMPO_COMPROVANTE_ESTAB;
+        comprovanteEstab = comprovanteEstab.trim();
+
+        if(comprovanteEstab == null || comprovanteEstab.isEmpty()) return;
+
+        List<String> lines = new ArrayList<>();
+        for(int i = 0; i < comprovanteEstab.length(); i += maxChars){
+            int fim = Math.min(i + maxChars, comprovanteEstab.length());
+            lines.add(comprovanteEstab.substring(i, fim));
+        }
+
+        for(String line : lines) printFormat(line, LEFT, false);
+
+        printer.scrollPaper(1);
+        printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
+    }
+
     private void printFormat(String s, Alignment alignment, Boolean bold) throws PrinterException{
-        if(s != null && !s.isEmpty()){
-            List<String> linhas = new ArrayList<>();
+        if(s == null || s.isEmpty()) return;
 
-            // Tratativa para quebra de linha
-            if(s.length() > maxChars){
-                // Evitando cortar palavras
-                String[] palavras = s.split(" ");
-                StringBuilder linhaAtual = new StringBuilder();
+        List<String> linhas = new ArrayList<>();
 
-                for(String palavra : palavras){
-                    // Se adicionar essa palavra passar do limite, salva linha e começa outra
-                    if(linhaAtual.length() > 0 && (linhaAtual.length() + 1 + palavra.length()) > maxChars){
-                        linhas.add(linhaAtual.toString());
-                        linhaAtual = new StringBuilder();
-                    }
+        // Tratativa para quebra de linha
+        if(s.length() > maxChars){
+            // Evitando cortar palavras
+            String[] palavras = s.split(" ");
+            StringBuilder linhaAtual = new StringBuilder();
 
-                    if(linhaAtual.length() > 0){
-                        linhaAtual.append(" ");
-                    }
-                    linhaAtual.append(palavra);
-                }
-
-                // Adiciona a última linha se sobrar algo
-                if(linhaAtual.length() > 0){
+            for(String palavra : palavras){
+                // Se adicionar essa palavra passar do limite, salva linha e começa outra
+                if(linhaAtual.length() > 0 && (linhaAtual.length() + 1 + palavra.length()) > maxChars){
                     linhas.add(linhaAtual.toString());
+                    linhaAtual = new StringBuilder();
                 }
-            }else{
-                linhas.add(s);
+
+                if(linhaAtual.length() > 0){
+                    linhaAtual.append(" ");
+                }
+                linhaAtual.append(palavra);
             }
 
-            for(String linha : linhas){
-                TextFormat textFormat = new TextFormat();
-                textFormat.setBold(bold);
-                textFormat.setUnderscore(false);
-                textFormat.setFontSize(fontSize);
-                textFormat.setLineSpacing(lineSpacing);
-                textFormat.setAlignment(alignment);
-
-                printer.printText(textFormat,linha);
+            // Adiciona a última linha se sobrar algo
+            if(linhaAtual.length() > 0){
+                linhas.add(linhaAtual.toString());
             }
+        }else{
+            linhas.add(s);
+        }
+
+        for(String linha : linhas){
+            TextFormat textFormat = new TextFormat();
+            textFormat.setBold(bold);
+            textFormat.setUnderscore(false);
+            textFormat.setFontSize(fontSize);
+            textFormat.setLineSpacing(lineSpacing);
+            textFormat.setAlignment(alignment);
+
+            printer.printText(textFormat,linha);
         }
     }
 

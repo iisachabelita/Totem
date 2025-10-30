@@ -35,7 +35,10 @@ public class CliSiTef implements ICliSiTefListener{
     private final Map<String, Integer> retryMap = new HashMap<>();
     private Boolean firstTransaction = true;
 
-    public SharedPreferences prefs = null;
+    private SharedPreferences prefs = null;
+
+    public String CAMPO_COMPROVANTE_CLIENTE = null;
+    public String CAMPO_COMPROVANTE_ESTAB = null;
 
     public CliSiTef(Context context){
         this.context = context.getApplicationContext();
@@ -78,19 +81,6 @@ public class CliSiTef implements ICliSiTefListener{
 
             prefs.edit().putString("mensagemPadrao",parameters.optString("mensagemPadrao")).apply();
             prefs.edit().putString("ParametrosAdicionais",parameters.optString("ParametrosAdicionais")).apply();
-
-            // 121 - Trace
-            // 113 - Reimpressão específica
-            // 200 - Cancelamento
-            // 122 - Carteira digital
-            // 123 - Cancelamento via Carteira Digital
-//            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-//                try {
-//                    JSONObject params = new JSONObject();
-//                    params.put("modalidade", 121);
-//                    transaction(params);
-//                } catch (Exception e){ throw new RuntimeException(e); }
-//            }, 30000);
         } else{ Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config); }
     }
 
@@ -141,34 +131,75 @@ public class CliSiTef implements ICliSiTefListener{
         Log.d("CliSiTef", "onData, stage: " + stage + " command: " + command + " fieldId: " + fieldId + " minLength: " + minLength + " maxLength: " + maxLength + " input: " + new String(input));
 
         int modalidade = prefs.getInt("modalidade", 0);
+        if(modalidade == 114){
+            switch(command){
+                case CMD_CONFIRMATION: // 20
+                    clisitef.continueTransaction("0");
+                    break;
 
-        if(modalidade == 2 || modalidade == 3){
-            // if(stage == 1){
-            try { handleData(command,fieldId);
-            } catch (JSONException e) { throw new RuntimeException(e); }
-            // } else{
-                // clisitef.continueTransaction("");
-            // }
-        } else{
+                default:
+                    clisitef.continueTransaction("");
+                    break;
+            }
+            return;
+        }
+
+        JSONObject jsonResponse = new JSONObject();
+
+        try {
             switch(command){
                 case CMD_RESULT_DATA: // 0
-                    if(
-                            // fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor() ||
-                            // fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor() ||
-                            fieldId == Transaction.CAMPO_NSU.getValor()
-                    ){
-                         JSONObject jsonResponse = new JSONObject();
-                         try { jsonResponse.put("nsu",clisitef.getBuffer());
-                         } catch (JSONException e){ throw new RuntimeException(e); }
-                         MainActivity.sendToJS(jsonResponse);
+                    if(fieldId == Transaction.CAMPO_NSU.getValor()){
+                        jsonResponse.put("command", "nsu");
+                        jsonResponse.put("nsu",clisitef.getBuffer());
+                        MainActivity.sendToJS(jsonResponse);
                     }
+
+                    if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor()) CAMPO_COMPROVANTE_CLIENTE = clisitef.getBuffer();
+                    if(fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor()) CAMPO_COMPROVANTE_ESTAB = clisitef.getBuffer();
+
                     clisitef.continueTransaction("");
                     break;
 
-                case CMD_GET_MENU_OPTION: // 21
+                case CMD_CLEAR_MSG_CASHIER: // 11
+                case CMD_CLEAR_MSG_CUSTOMER: // 12
+                case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
+                        jsonResponse.put("message","");
+                        MainActivity.sendToJS(jsonResponse);
+                    clisitef.continueTransaction("");
+                    break;
+
                 case CMD_CONFIRMATION:// 20
-                case CMD_GET_FIELD: // 30
-                case CMD_GET_FIELD_CURRENCY: // 34
+                    // Confirma/cancela automaticamente
+                    String inputMsg = clisitef.getBuffer();
+                    String confirm;
+
+                    int count = retryMap.getOrDefault(inputMsg, 0);
+                    if(count < 3){
+                        confirm = "0"; // Confirma
+                        retryMap.put(inputMsg, count + 1);
+
+                        jsonResponse.put("message", inputMsg);
+                        MainActivity.sendToJS(jsonResponse);
+                    } else{
+                        confirm = "1"; // Cancela
+                    }
+
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> clisitef.continueTransaction(confirm),5000 );
+                    break;
+
+                // case CMD_GET_MENU_OPTION: // 21
+                    // Débito e Crédito à vista
+                    // clisitef.continueTransaction("1");
+                    // break;
+
+                case CMD_SHOW_MSG_CASHIER: // 1
+                case CMD_SHOW_MSG_CUSTOMER: // 2
+                case CMD_SHOW_MSG_CASHIER_CUSTOMER: // 3
+                case CMD_PRESS_ANY_KEY: // 22
+                    jsonResponse.put("message",clisitef.getBuffer());
+                    MainActivity.sendToJS(jsonResponse);
+                    clisitef.continueTransaction("");
                     break;
 
                 // esperando ação do usuário
@@ -177,78 +208,10 @@ public class CliSiTef implements ICliSiTefListener{
                     clisitef.continueTransaction("");
                     break;
             }
-        }
+        } catch (JSONException e) { throw new RuntimeException(e); }
 
         if(new String(input).equals("13 - Operação Cancelada")){
             clisitef.abortTransaction(-1);
-        }
-    }
-
-    private void handleData(
-        int command,
-        int fieldId
-    ) throws JSONException {
-        JSONObject jsonResponse = new JSONObject();
-
-        switch(command){
-            case CMD_RESULT_DATA: // 0
-                if(
-                        // fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor() ||
-                        // fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor() ||
-                        fieldId == Transaction.CAMPO_NSU.getValor()
-                ){
-                    jsonResponse.put("nsu",clisitef.getBuffer());
-                    MainActivity.sendToJS(jsonResponse);
-                }
-                clisitef.continueTransaction("");
-                break;
-
-            case CMD_GET_MENU_OPTION: // 21
-                    // Débito e Crédito à vista
-                    clisitef.continueTransaction("1");
-                    break;
-
-            case CMD_CONFIRMATION:// 20
-                // Confirma/cancela automaticamente
-                String inputMsg = clisitef.getBuffer();
-                String confirm;
-
-                int count = retryMap.getOrDefault(inputMsg, 0);
-                if(count < 3){
-                    confirm = "0"; // Confirma
-                    retryMap.put(inputMsg, count + 1);
-
-                    jsonResponse.put("message", inputMsg);
-                    MainActivity.sendToJS(jsonResponse);
-                } else{
-                    confirm = "1"; // Cancela
-                }
-
-                new Handler(Looper.getMainLooper()).postDelayed(() -> clisitef.continueTransaction(confirm),5000 );
-                break;
-
-            case CMD_SHOW_MSG_CASHIER: // 1
-            case CMD_SHOW_MSG_CUSTOMER: // 2
-            case CMD_SHOW_MSG_CASHIER_CUSTOMER: // 3
-            case CMD_PRESS_ANY_KEY: // 22
-                jsonResponse.put("message",clisitef.getBuffer());
-                MainActivity.sendToJS(jsonResponse);
-                clisitef.continueTransaction("");
-                break;
-
-            case CMD_CLEAR_MSG_CASHIER: // 11
-            case CMD_CLEAR_MSG_CUSTOMER: // 12
-            case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
-                jsonResponse.put("message","");
-                MainActivity.sendToJS(jsonResponse);
-                clisitef.continueTransaction("");
-                break;
-
-            // esperando ação do usuário
-            case CMD_ABORT_REQUEST: // 23
-            default:
-                clisitef.continueTransaction("");
-                break;
         }
     }
 
@@ -264,17 +227,19 @@ public class CliSiTef implements ICliSiTefListener{
 
         if(stage == 1 && resultCode == 0){
             try {
-                clisitef.finishTransaction(1);
-            } catch(Exception e){ }
-        } else if(stage == 2 && resultCode == 0){
-            if(modalidade == 2 || modalidade == 3){
                 // Impressão
                 try {
-                    jsonResponse.put("success", true);
+                    jsonResponse.put("print", true);
                 } catch(JSONException e){ e.printStackTrace(); }
                 MainActivity.sendToJS(jsonResponse);
-                if(firstTransaction){ configurarPinpad(); }
-            }
+            } catch(Exception e){ }
+        } else if(stage == 2 && resultCode == 0){
+            // Confirmação
+            try {
+                jsonResponse.put("success", true);
+            } catch(JSONException e){ e.printStackTrace(); }
+            MainActivity.sendToJS(jsonResponse);
+            if(firstTransaction){ configurarPinpad(); }
         } else if(resultCode == 0){
             // Envio da confirmação do pedido através de pending transactions
             try {
@@ -303,7 +268,7 @@ public class CliSiTef implements ICliSiTefListener{
                         break;
 
                     default:
-                        if (resultCode > 0) {
+                        if(resultCode > 0){
                             erro = "Pagamento recusado pelo banco.";
                         } else {
                             erro = "Não foi possível concluir o pagamento. Tente novamente.";
@@ -313,13 +278,9 @@ public class CliSiTef implements ICliSiTefListener{
 
                 try {
                     jsonResponse.put("error", erro);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                } catch(JSONException e){ e.printStackTrace(); }
                 MainActivity.sendToJS(jsonResponse);
-                if (firstTransaction) {
-                    configurarPinpad();
-                }
+                if(firstTransaction){ configurarPinpad(); }
             }
         }
     }

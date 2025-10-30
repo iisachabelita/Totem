@@ -16,7 +16,7 @@ public class MainActivity extends Activity {
     private static GeckoSession geckoSession;
     private GeckoRuntime geckoRuntime;
     private boolean configureSent = false;
-    CliSiTef clisitef;
+    static CliSiTef clisitef;
 
     private static final String LOGIN_URL = "https://isabelly-deeliv.felippebueno.com.br/totem/globais/login";
 
@@ -66,6 +66,7 @@ public class MainActivity extends Activity {
             String command = json.optString("command");
             JSONObject payload = json.optJSONObject("payload");
 
+            Impressora impressora = null;
             switch(command){
                 case "configure":
                     if(!configureSent){
@@ -86,15 +87,21 @@ public class MainActivity extends Activity {
                     break;
 
                 case "printer":
-                    Impressora impressora = new Impressora(this);
+                    impressora = new Impressora(this);
                     JSONObject parameters = payload.optJSONObject("parameters");
                     JSONArray items = payload.optJSONArray("items");
-                    impressora.imprimirComprovante(items, parameters);
+                    // impressora.imprimirComprovante(items, parameters);
                     break;
 
-                case "tratativas":
-                    clisitef.clisitef.continueTransaction(payload.getString("message"));
-                    Log.d("CliSiTef", "COMANDO RECEBIDO: " + payload.getString("message"));
+                case "tefReceipt":
+                    String action = payload.optString("action");
+
+                    if(action.equals("print")){
+                        impressora = new Impressora(this);
+                        impressora.imprimirComprovanteTransacao();
+                    }
+
+                    clisitef.clisitef.finishTransaction(1);
                     break;
             }
         } catch (Exception e){ Log.e("Bridge", "Erro ao processar mensagem do JS", e); }
