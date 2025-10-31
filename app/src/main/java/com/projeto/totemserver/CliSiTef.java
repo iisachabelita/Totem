@@ -1,14 +1,17 @@
 package com.projeto.totemserver;
 
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_ABORT_REQUEST;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MENU_TITLE;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CASHIER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CASHIER_CUSTOMER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CUSTOMER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CONFIRMATION;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CONFIRM_GO_BACK;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_CURRENCY;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_MENU_OPTION;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_PRESS_ANY_KEY;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MENU_TITLE;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER_CUSTOMER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_RESULT_DATA;
@@ -131,44 +134,53 @@ public class CliSiTef implements ICliSiTefListener{
         Log.d("CliSiTef", "onData, stage: " + stage + " command: " + command + " fieldId: " + fieldId + " minLength: " + minLength + " maxLength: " + maxLength + " input: " + new String(input));
 
         int modalidade = prefs.getInt("modalidade", 0);
-        if(modalidade == 114){
-            switch(command){
-                case CMD_CONFIRMATION: // 20
-                    clisitef.continueTransaction("0");
-                    break;
+        Boolean management = modalidade != 2 && modalidade != 3 ? true : false;
 
-                default:
-                    clisitef.continueTransaction("");
-                    break;
-            }
-            return;
-        }
+        String bridge = management ? "managementGeckoBridge" : "geckoBridge";
 
         JSONObject jsonResponse = new JSONObject();
 
         try {
             switch(command){
                 case CMD_RESULT_DATA: // 0
-                    if(fieldId == Transaction.CAMPO_NSU.getValor()){
-                        jsonResponse.put("command", "nsu");
-                        jsonResponse.put("nsu",clisitef.getBuffer());
-                        MainActivity.sendToJS(jsonResponse);
-                    }
+                    if(management){
+                        if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor()){
+                            CAMPO_COMPROVANTE_CLIENTE = clisitef.getBuffer();
+                            CAMPO_COMPROVANTE_ESTAB = "";
+                        }
+                    } else{
+                        if(fieldId == Transaction.CAMPO_NSU.getValor()){
+                            jsonResponse.put("command", "nsu");
+                            jsonResponse.put("nsu",clisitef.getBuffer());
+                            MainActivity.sendToJS(jsonResponse);
+                        }
 
-                    if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor()) CAMPO_COMPROVANTE_CLIENTE = clisitef.getBuffer();
-                    if(fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor()) CAMPO_COMPROVANTE_ESTAB = clisitef.getBuffer();
+                        if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor()) CAMPO_COMPROVANTE_CLIENTE = clisitef.getBuffer();
+                        if(fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor()) CAMPO_COMPROVANTE_ESTAB = clisitef.getBuffer();
+                    }
 
                     clisitef.continueTransaction("");
                     break;
+
+                case CMD_SHOW_MENU_TITLE: // 4
+                case CMD_GET_FIELD: // 30
+                case CMD_GET_FIELD_CURRENCY: // 34
+                    jsonResponse.put("command", bridge);
+                    jsonResponse.put("title",clisitef.getBuffer());
+                    MainActivity.sendToJS(jsonResponse);
+                    clisitef.continueTransaction("");
 
                 case CMD_CLEAR_MSG_CASHIER: // 11
                 case CMD_CLEAR_MSG_CUSTOMER: // 12
                 case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
-                        jsonResponse.put("message","");
-                        MainActivity.sendToJS(jsonResponse);
+                case CMD_CLEAR_MENU_TITLE: // 14
+                    jsonResponse.put("command", bridge);
+                    jsonResponse.put("message","");
+                    MainActivity.sendToJS(jsonResponse);
                     clisitef.continueTransaction("");
                     break;
 
+                case CMD_CONFIRM_GO_BACK: // 19
                 case CMD_CONFIRMATION:// 20
                     // Confirma/cancela automaticamente
                     String inputMsg = clisitef.getBuffer();
@@ -179,6 +191,7 @@ public class CliSiTef implements ICliSiTefListener{
                         confirm = "0"; // Confirma
                         retryMap.put(inputMsg, count + 1);
 
+                        jsonResponse.put("command", "geckoBridge");
                         jsonResponse.put("message", inputMsg);
                         MainActivity.sendToJS(jsonResponse);
                     } else{
@@ -188,15 +201,17 @@ public class CliSiTef implements ICliSiTefListener{
                     new Handler(Looper.getMainLooper()).postDelayed(() -> clisitef.continueTransaction(confirm),5000 );
                     break;
 
-                // case CMD_GET_MENU_OPTION: // 21
-                    // Débito e Crédito à vista
-                    // clisitef.continueTransaction("1");
-                    // break;
+                case CMD_GET_MENU_OPTION: // 21
+                    jsonResponse.put("command", bridge);
+                    jsonResponse.put("message", clisitef.getBuffer());
+                    MainActivity.sendToJS(jsonResponse);
+                    break;
 
                 case CMD_SHOW_MSG_CASHIER: // 1
                 case CMD_SHOW_MSG_CUSTOMER: // 2
                 case CMD_SHOW_MSG_CASHIER_CUSTOMER: // 3
                 case CMD_PRESS_ANY_KEY: // 22
+                    jsonResponse.put("command", bridge);
                     jsonResponse.put("message",clisitef.getBuffer());
                     MainActivity.sendToJS(jsonResponse);
                     clisitef.continueTransaction("");
@@ -208,7 +223,7 @@ public class CliSiTef implements ICliSiTefListener{
                     clisitef.continueTransaction("");
                     break;
             }
-        } catch (JSONException e) { throw new RuntimeException(e); }
+        } catch (JSONException e) { e.printStackTrace(); }
 
         if(new String(input).equals("13 - Operação Cancelada")){
             clisitef.abortTransaction(-1);
@@ -226,13 +241,19 @@ public class CliSiTef implements ICliSiTefListener{
         int modalidade = prefs.getInt("modalidade", 0);
 
         if(stage == 1 && resultCode == 0){
-            try {
-                // Impressão
+            if(modalidade == 114){
+                // Reimpressão do cupomFiscal
+                 // try { MainActivity.impressora.imprimirComprovanteTransacao();
+                 // } catch(Exception e){ e.printStackTrace(); }
+            }
+
+            if(modalidade == 2 || modalidade == 3){
                 try {
+                    // Impressão
                     jsonResponse.put("print", true);
-                } catch(JSONException e){ e.printStackTrace(); }
-                MainActivity.sendToJS(jsonResponse);
-            } catch(Exception e){ }
+                    MainActivity.sendToJS(jsonResponse);
+                } catch(Exception e){ e.printStackTrace(); }
+            }
         } else if(stage == 2 && resultCode == 0){
             // Confirmação
             try {
@@ -249,7 +270,7 @@ public class CliSiTef implements ICliSiTefListener{
             MainActivity.sendToJS(jsonResponse);
             if(firstTransaction){ configurarPinpad(); }
         } else{
-            if(modalidade == 2 || modalidade == 3) {
+            if(modalidade == 2 || modalidade == 3){
                 String erro = "";
                 switch(resultCode){
                     case -2:

@@ -1,10 +1,5 @@
 [Geral]
-;7 - Habilita venda via Carteira Digital;
-;8 - Habilita cancelamento via Carteira Digital.
-;121 - Enviar trace.
-TransacoesAdicionaisHabilitadas=7;8;16;20;22;26;56;57;58;3014;3192;3193;3624;3625;3626;4178
-DataEmAmbienteDeDesenvolvimento=20251028
-
+DataEmAmbienteDeDesenvolvimento=20251103
 
 [CliSiTef]
 DiretorioTrace=./files
@@ -18,4 +13,3 @@ HabilitaTrace=1
 [SiTef]
 ConexaoObrigatoria=1
 HabilitaCarteirasDigitais=1
-;MantemConexaoAtiva=1

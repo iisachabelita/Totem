@@ -17,7 +17,7 @@ public class MainActivity extends Activity {
     private GeckoRuntime geckoRuntime;
     private boolean configureSent = false;
     static CliSiTef clisitef;
-
+    static Impressora impressora = null;
     private static final String LOGIN_URL = "https://isabelly-deeliv.felippebueno.com.br/totem/globais/login";
 
     @Override
@@ -66,7 +66,6 @@ public class MainActivity extends Activity {
             String command = json.optString("command");
             JSONObject payload = json.optJSONObject("payload");
 
-            Impressora impressora = null;
             switch(command){
                 case "configure":
                     if(!configureSent){
@@ -98,10 +97,14 @@ public class MainActivity extends Activity {
 
                     if(action.equals("print")){
                         impressora = new Impressora(this);
-                        impressora.imprimirComprovanteTransacao();
+                        // impressora.imprimirComprovanteTransacao();
                     }
 
                     clisitef.clisitef.finishTransaction(1);
+                    break;
+
+                case "managementMenu":
+                    clisitef.clisitef.continueTransaction(payload.optString("message"));
                     break;
             }
         } catch (Exception e){ Log.e("Bridge", "Erro ao processar mensagem do JS", e); }
