@@ -73,6 +73,9 @@ public class Impressora implements Printer.Listener {
             case 1:
                 prefs.edit().putInt("fontSize", 20).apply();
                 prefs.edit().putInt("topHeight", 4).apply();
+                // Ideal
+                // prefs.edit().putInt("maxChars", 32).apply();
+                // prefs.edit().putInt("lineSpacing", 0).apply();
                 break;
 
             case 2:

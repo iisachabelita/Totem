@@ -71,7 +71,8 @@ public class MainActivity extends Activity {
                     if(!configureSent){
                         clisitef = new CliSiTef(this);
                         clisitef.configurarCliSiTef(payload);
-                        new Impressora(this).configurarImpressora(payload);
+                        impressora = new Impressora(this);
+                        impressora.configurarImpressora(payload);
                         configureSent = true;
                     }
                     break;
@@ -86,7 +87,6 @@ public class MainActivity extends Activity {
                     break;
 
                 case "printer":
-                    impressora = new Impressora(this);
                     JSONObject parameters = payload.optJSONObject("parameters");
                     JSONArray items = payload.optJSONArray("items");
                     // impressora.imprimirComprovante(items, parameters);
@@ -95,10 +95,7 @@ public class MainActivity extends Activity {
                 case "tefReceipt":
                     String action = payload.optString("action");
 
-                    if(action.equals("print")){
-                        impressora = new Impressora(this);
-                        // impressora.imprimirComprovanteTransacao();
-                    }
+                    if(action.equals("print")) impressora.imprimirComprovanteTransacao();
 
                     clisitef.clisitef.finishTransaction(1);
                     break;
