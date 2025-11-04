@@ -230,35 +230,77 @@ public class Impressora implements Printer.Listener {
 
     public void imprimirComprovanteTransacao() throws PrinterException{
         String comprovante = clisitef.CAMPO_COMPROVANTE_CLIENTE;
-        comprovante = comprovante.trim();
+        if(comprovante != null){
+            comprovante = comprovante.trim();
 
-        if(comprovante == null || comprovante.isEmpty()) return;
+            if(!comprovante.isEmpty()){
+                String[] linhas = comprovante.split("\\r?\\n");
 
-        List<String> linhas = new ArrayList<>();
-        for(int i = 0; i < comprovante.length(); i += maxChars){
-            int fim = Math.min(i + maxChars, comprovante.length());
-            linhas.add(comprovante.substring(i, fim));
+                for(String linha : linhas){
+                    linha = linha.stripTrailing();
+
+                    // comentar trecho se for carteira digital
+                    if(linha.length() > maxChars){
+                        if(linha.contains("  ")){
+                            int excesso = linha.length() - maxChars;
+
+                            while(excesso > 0 && linha.contains("  ")){
+                                linha = linha.replaceFirst("  ", " ");
+                                excesso = linha.length() - maxChars;
+                            }
+                        }
+                    }
+
+                    if(linha.length() > maxChars){
+                        int start = 0;
+                        while(start < linha.length()){
+                            int end = Math.min(start + maxChars, linha.length());
+                            printFormat(linha.substring(start, end), LEFT, false);
+                            start = end;
+                        }
+                    } else{ printFormat(linha, CENTER, false); }
+                }
+
+                printer.scrollPaper(1);
+            }
         }
-
-        for(String linha : linhas) printFormat(linha, LEFT, false);
-
-        // Via do estabelecimento
-        printer.scrollPaper(1);
 
         String comprovanteEstab = clisitef.CAMPO_COMPROVANTE_ESTAB;
-        comprovanteEstab = comprovanteEstab.trim();
+        if(comprovanteEstab != null){
+            comprovanteEstab = comprovanteEstab.trim();
 
-        if(comprovanteEstab == null || comprovanteEstab.isEmpty()) return;
+            if(!comprovanteEstab.isEmpty()){
+                String[] linhas = comprovanteEstab.split("\\r?\\n");
 
-        List<String> lines = new ArrayList<>();
-        for(int i = 0; i < comprovanteEstab.length(); i += maxChars){
-            int fim = Math.min(i + maxChars, comprovanteEstab.length());
-            lines.add(comprovanteEstab.substring(i, fim));
+                for(String linha : linhas){
+                    linha = linha.stripTrailing();
+
+                    // comentar trecho se for carteira digital
+                    if(linha.length() > maxChars){
+                        if(linha.contains("  ")){
+                            int excesso = linha.length() - maxChars;
+
+                            while(excesso > 0 && linha.contains("  ")){
+                                linha = linha.replaceFirst("  ", " ");
+                                excesso = linha.length() - maxChars;
+                            }
+                        }
+                    }
+
+                    if(linha.length() > maxChars){
+                        int start = 0;
+                        while(start < linha.length()){
+                            int end = Math.min(start + maxChars, linha.length());
+                            printFormat(linha.substring(start, end), LEFT, false);
+                            start = end;
+                        }
+                    } else{ printFormat(linha, CENTER, false); }
+                }
+
+                printer.scrollPaper(1);
+            }
         }
 
-        for(String line : lines) printFormat(line, LEFT, false);
-
-        printer.scrollPaper(1);
         printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
     }
 

@@ -10,12 +10,15 @@ import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CONFIRM_GO_BACK;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_CURRENCY;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_MENU_OPTION;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_MESSAGE_QRCODE;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_PRESS_ANY_KEY;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_REMOVE_QRCODE_FIELD;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MENU_TITLE;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER_CUSTOMER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_RESULT_DATA;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CUSTOMER;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_QRCODE_FIELD;
 
 import com.projeto.totemserver.enums.Transaction;
 import android.content.Context;
@@ -44,6 +47,7 @@ public class CliSiTef implements ICliSiTefListener{
     public String CAMPO_COMPROVANTE_ESTAB = null;
 
     Boolean management = false;
+    Boolean pendingOrder = false;
 
     public CliSiTef(Context context){
         this.context = context.getApplicationContext();
@@ -70,7 +74,7 @@ public class CliSiTef implements ICliSiTefListener{
                 );
 
                 if(returnPendingTransactions > 0){
-                    // Caso tiver trnasações pendentes, irá ser cancelada
+                    // Caso tiver trnasações pendentes, irá ser aceita
                     clisitef.finishTransaction(this,
                             // Recusar a transação, ENUM (0)
                             // Aceitar a transação, ENUM (1)
@@ -79,6 +83,8 @@ public class CliSiTef implements ICliSiTefListener{
                             prefs.getString("dataFiscal", ""),
                             prefs.getString("horaFiscal", ""),
                             prefs.getString("ParametrosAdicionais", ParametrosAdicionais));
+
+                    pendingOrder = true;
                 }
             } catch(Exception e){ throw new RuntimeException(e); }
 
@@ -121,10 +127,13 @@ public class CliSiTef implements ICliSiTefListener{
         prefs.edit().putString("restricoes",restricoes).apply();
 
         retryMap.clear();
+        management = modalidade == 110 ? true : false;
+        CAMPO_COMPROVANTE_CLIENTE = "";
+        CAMPO_COMPROVANTE_ESTAB = "";
+
+        // modalidade = 122;
         int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
         Log.d("CliSiTef", "START TRANSACTION: " + status);
-
-        management = modalidade == 110 ? true : false;
     }
 
     @Override
@@ -161,6 +170,7 @@ public class CliSiTef implements ICliSiTefListener{
                 case CMD_SHOW_MSG_CUSTOMER: // 2
                 case CMD_SHOW_MSG_CASHIER_CUSTOMER: // 3
                 case CMD_PRESS_ANY_KEY: // 22
+                case CMD_MESSAGE_QRCODE: // 52
                     jsonResponse.put("command", bridge);
                     jsonResponse.put("message",clisitef.getBuffer());
                     MainActivity.sendToJS(jsonResponse);
@@ -182,9 +192,7 @@ public class CliSiTef implements ICliSiTefListener{
                         break;
                     }
 
-                    if(fieldId == Transaction.CAMPO_ADM.getValor()){
-                        // tipoCampo 500 (tratativa diferente)
-                    }
+                    if(fieldId == Transaction.CAMPO_ADM.getValor()) bridge = "administrator";
 
                     jsonResponse.put("command", bridge);
                     jsonResponse.put("message",clisitef.getBuffer());
@@ -218,9 +226,11 @@ public class CliSiTef implements ICliSiTefListener{
                         confirm = "0"; // Confirma
                         retryMap.put(inputMsg, count + 1);
 
-                        jsonResponse.put("command", bridge);
-                        jsonResponse.put("message", inputMsg);
-                        MainActivity.sendToJS(jsonResponse);
+                        if(!management){
+                            jsonResponse.put("command", bridge);
+                            jsonResponse.put("message", inputMsg);
+                            MainActivity.sendToJS(jsonResponse);
+                        }
                     } else{
                         confirm = "1"; // Cancela
                     }
@@ -234,8 +244,9 @@ public class CliSiTef implements ICliSiTefListener{
                     MainActivity.sendToJS(jsonResponse);
                     break;
 
-                // esperando ação do usuário
-                case CMD_ABORT_REQUEST: // 23
+                case CMD_ABORT_REQUEST: // 23 - esperando ação do usuário
+                case CMD_SHOW_QRCODE_FIELD: // 50
+                case CMD_REMOVE_QRCODE_FIELD: // 51
                 default:
                     clisitef.continueTransaction("");
                     break;
@@ -259,33 +270,33 @@ public class CliSiTef implements ICliSiTefListener{
             if(management){
                 // Reimpressão do cupomFiscal
                 try {
-                    CAMPO_COMPROVANTE_ESTAB = "";
                     MainActivity.impressora.imprimirComprovanteTransacao();
                     clisitef.finishTransaction(1);
                 } catch(Exception e){ e.printStackTrace(); }
             } else{
                 try {
                     // Impressão
-                    jsonResponse.put("print", true);
+                    jsonResponse.put("status", "print");
                     MainActivity.sendToJS(jsonResponse);
                 } catch(Exception e){ e.printStackTrace(); }
             }
         } else if(stage == 2 && resultCode == 0){
-            if(!management){
+            if(pendingOrder){
+                // Envio da confirmação do pedido através de pending transactions
+                try {
+                    jsonResponse.put("status", "pendingOrder");
+                    jsonResponse.put("value", prefs.getString("docFiscal", ""));
+                } catch(JSONException e){ e.printStackTrace(); }
+                MainActivity.sendToJS(jsonResponse);
+                pendingOrder = false;
+            } else if(!management){
                 // Confirmação
                 try {
-                    jsonResponse.put("success", true);
+                    jsonResponse.put("status", "success");
                 } catch(JSONException e){ e.printStackTrace(); }
                 MainActivity.sendToJS(jsonResponse);
             }
-            if(firstTransaction){ configurarPinpad(); }
-        } else if(resultCode == 0){
-            // Envio da confirmação do pedido através de pending transactions
-            try {
-                jsonResponse.put("pendingOrder", true);
-                jsonResponse.put("orderId", prefs.getString("docFiscal", ""));
-            } catch(JSONException e){ e.printStackTrace(); }
-            MainActivity.sendToJS(jsonResponse);
+
             if(firstTransaction){ configurarPinpad(); }
         } else{
             if(!management){
@@ -316,7 +327,8 @@ public class CliSiTef implements ICliSiTefListener{
                 }
 
                 try {
-                    jsonResponse.put("error", erro);
+                    jsonResponse.put("status", "error");
+                    jsonResponse.put("value", erro);
                 } catch(JSONException e){ e.printStackTrace(); }
                 MainActivity.sendToJS(jsonResponse);
                 if(firstTransaction){ configurarPinpad(); }
