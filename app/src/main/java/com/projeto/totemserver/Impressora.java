@@ -239,7 +239,6 @@ public class Impressora implements Printer.Listener {
                 for(String linha : linhas){
                     linha = linha.stripTrailing();
 
-                    // comentar trecho se for carteira digital
                     if(linha.length() > maxChars){
                         if(linha.contains("  ")){
                             int excesso = linha.length() - maxChars;
@@ -275,7 +274,6 @@ public class Impressora implements Printer.Listener {
                 for(String linha : linhas){
                     linha = linha.stripTrailing();
 
-                    // comentar trecho se for carteira digital
                     if(linha.length() > maxChars){
                         if(linha.contains("  ")){
                             int excesso = linha.length() - maxChars;
