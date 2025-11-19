@@ -1,4 +1,4 @@
-package com.projeto.totemserver;
+package com.projeto.totem;
 
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_ABORT_REQUEST;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MENU_TITLE;
@@ -20,7 +20,7 @@ import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_RESULT_DATA;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CUSTOMER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_QRCODE_FIELD;
 
-import com.projeto.totemserver.enums.Transaction;
+import com.projeto.totem.enums.Transaction;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;

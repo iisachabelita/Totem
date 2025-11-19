@@ -1,6 +1,6 @@
-package com.projeto.totemserver;
+package com.projeto.totem;
 
-import static com.projeto.totemserver.MainActivity.clisitef;
+import static com.projeto.totem.MainActivity.clisitef;
 import static br.com.gertec.easylayer.printer.Alignment.CENTER;
 import static br.com.gertec.easylayer.printer.Alignment.LEFT;
 import android.content.Context;

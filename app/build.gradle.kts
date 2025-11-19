@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.projeto.totemserver"
+    namespace = "com.projeto.totem"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.projeto.totemserver"
+        applicationId = "com.projeto.totem"
         minSdk = 33
         targetSdk = 35
         versionCode = 1

@@ -1,5 +1,5 @@
 [Geral]
-DataEmAmbienteDeDesenvolvimento=20251105
+; DataEmAmbienteDeDesenvolvimento=20251105
 
 [CliSiTef]
 DiretorioTrace=./files

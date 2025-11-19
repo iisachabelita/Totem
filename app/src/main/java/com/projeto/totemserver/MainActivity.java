@@ -1,4 +1,4 @@
-package com.projeto.totemserver;
+package com.projeto.totem;
 
 import android.app.Activity;
 import android.os.Bundle;

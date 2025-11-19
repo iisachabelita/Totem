@@ -1,4 +1,4 @@
-package com.projeto.totemserver.enums;
+package com.projeto.totem.enums;
 
 public enum Transaction {
         CAMPO_COMPROVANTE_CLIENTE(121),
