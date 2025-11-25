@@ -20,6 +20,8 @@ import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_RESULT_DATA;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CUSTOMER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_QRCODE_FIELD;
 
+import br.com.softwareexpress.sitef.android.ICliSiTefListener;
+
 import com.projeto.totem.enums.Transaction;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -32,8 +34,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import br.com.softwareexpress.sitef.android.ICliSiTefListener;
 
 public class CliSiTef implements ICliSiTefListener{
     private final Context context;
