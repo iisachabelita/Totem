@@ -18,6 +18,7 @@ public class MainActivity extends Activity {
     private boolean configureSent = false;
     static CliSiTef clisitef;
     static Impressora impressora = null;
+    // private static final String LOGIN_URL = "https://www.deeliv.app/totem/globais/login";
     private static final String LOGIN_URL = "https://isabelly-deeliv.felippebueno.com.br/totem/globais/login";
 
     @Override
