@@ -264,41 +264,6 @@ public class Impressora implements Printer.Listener {
             }
         }
 
-        String comprovanteEstab = clisitef.CAMPO_COMPROVANTE_ESTAB;
-        if(comprovanteEstab != null){
-            comprovanteEstab = comprovanteEstab.trim();
-
-            if(!comprovanteEstab.isEmpty()){
-                String[] linhas = comprovanteEstab.split("\\r?\\n");
-
-                for(String linha : linhas){
-                    linha = linha.stripTrailing();
-
-                    if(linha.length() > maxChars){
-                        if(linha.contains("  ")){
-                            int excesso = linha.length() - maxChars;
-
-                            while(excesso > 0 && linha.contains("  ")){
-                                linha = linha.replaceFirst("  ", " ");
-                                excesso = linha.length() - maxChars;
-                            }
-                        }
-                    }
-
-                    if(linha.length() > maxChars){
-                        int start = 0;
-                        while(start < linha.length()){
-                            int end = Math.min(start + maxChars, linha.length());
-                            printFormat(linha.substring(start, end), LEFT, false);
-                            start = end;
-                        }
-                    } else{ printFormat(linha, CENTER, false); }
-                }
-
-                printer.scrollPaper(1);
-            }
-        }
-
         printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
     }
 

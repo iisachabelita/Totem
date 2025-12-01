@@ -186,11 +186,11 @@ public class CliSiTef implements ICliSiTefListener{
 
                 case CMD_GET_FIELD: // 30
                 case CMD_GET_FIELD_CURRENCY: // 34
-                    if(!management){
+                    // if(!management){
                         // Crédito parcelado
-                        clisitef.continueTransaction("2");
-                        break;
-                    }
+                        // clisitef.continueTransaction("2");
+                        // break;
+                    // }
 
                     if(fieldId == Transaction.CAMPO_ADM.getValor()) bridge = "administrator";
 

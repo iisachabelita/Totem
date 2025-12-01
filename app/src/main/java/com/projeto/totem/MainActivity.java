@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
                 case "printer":
                     JSONObject parameters = payload.optJSONObject("parameters");
                     JSONArray items = payload.optJSONArray("items");
-                    // impressora.imprimirComprovante(items, parameters);
+                    impressora.imprimirComprovante(items, parameters);
                     break;
 
                 case "tefReceipt":
