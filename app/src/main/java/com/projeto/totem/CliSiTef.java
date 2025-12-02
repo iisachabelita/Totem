@@ -131,7 +131,6 @@ public class CliSiTef implements ICliSiTefListener{
         CAMPO_COMPROVANTE_CLIENTE = "";
         CAMPO_COMPROVANTE_ESTAB = "";
 
-        // modalidade = 122;
         int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
         Log.d("CliSiTef", "START TRANSACTION: " + status);
     }
