@@ -373,12 +373,12 @@ public class Impressora implements Printer.Listener {
 
     @Override
     public void onPrinterError(PrinterError printerError){
-        Log.e("Impressora", "Erro de impressora: " + printerError.getCause());
+        Log.e("Impressora", "onPrinterError: " + printerError.getCause());
     }
 
     @Override
     public void onPrinterSuccessful(int printerRequestId){
-        Log.d("Impressora", "Impressão realizada com sucesso. ID: " + printerRequestId);
+        Log.d("Impressora", "onPrinterSuccessful: " + printerRequestId);
     }
 }
 

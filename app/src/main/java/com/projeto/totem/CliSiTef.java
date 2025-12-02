@@ -27,7 +27,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.text.SimpleDateFormat;
@@ -62,8 +61,6 @@ public class CliSiTef implements ICliSiTefListener{
         int config = clisitef.configure(IPSiTef,IdLoja,IdTerminal,ParametrosAdicionais);
 
         if(config == 0){
-            Log.d("CliSiTef", "CliSiTef configurado com sucesso");
-
             // Verificando se há transações pendentes
             prefs = context.getSharedPreferences("CliSiTef", Context.MODE_PRIVATE);
 
@@ -92,7 +89,7 @@ public class CliSiTef implements ICliSiTefListener{
 
             prefs.edit().putString("mensagemPadrao",parameters.optString("mensagemPadrao")).apply();
             prefs.edit().putString("ParametrosAdicionais",parameters.optString("ParametrosAdicionais")).apply();
-        } else{ Log.e("CliSiTef", "Falha ao configurar CliSiTef. Código: " + config); }
+        }
     }
 
     public void configurarPinpad(){
@@ -132,7 +129,6 @@ public class CliSiTef implements ICliSiTefListener{
         CAMPO_COMPROVANTE_ESTAB = "";
 
         int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
-        Log.d("CliSiTef", "START TRANSACTION: " + status);
     }
 
     @Override
@@ -144,8 +140,6 @@ public class CliSiTef implements ICliSiTefListener{
         int maxLength,
         byte[] input
     ){
-        Log.d("CliSiTef", "onData, stage: " + stage + " command: " + command + " fieldId: " + fieldId + " minLength: " + minLength + " maxLength: " + maxLength + " input: " + new String(input));
-
         String bridge = management ? "managementGeckoBridge" : "geckoBridge";
 
         JSONObject jsonResponse = new JSONObject();
@@ -259,8 +253,6 @@ public class CliSiTef implements ICliSiTefListener{
 
     @Override
     public void onTransactionResult(int stage,int resultCode){
-        Log.d("CliSiTef","onTransactionResult, stage " + stage + " resultCode: " + resultCode);
-
         JSONObject jsonResponse = new JSONObject();
         try { jsonResponse.put("command", "onTransactionResult");
         } catch(JSONException e){ e.printStackTrace(); }

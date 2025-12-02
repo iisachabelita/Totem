@@ -105,14 +105,13 @@ public class MainActivity extends Activity {
                     clisitef.clisitef.continueTransaction(payload.optString("message"));
                     break;
             }
-        } catch (Exception e){ Log.e("Bridge", "Erro ao processar mensagem do JS", e); }
+        } catch (Exception e){ Log.e("Bridge", "handleBridgeMessage: ", e); }
     }
 
     public static void sendToJS(JSONObject json){
         try {
             String js = "window.postMessage(" + JSONObject.quote(json.toString()) + ", '*');";
             geckoSession.loadUri("javascript:" + js);
-            Log.d("Bridge", "JS enviado: " + js);
-        } catch (Exception e){ Log.e("Bridge", "Erro ao enviar JS", e); }
+        } catch (Exception e){ Log.e("Bridge", "sendToJS: ", e); }
     }
 }
