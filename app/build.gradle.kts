@@ -1,10 +1,10 @@
-import com.android.build.api.dsl.Packaging
-
 plugins {
     alias(libs.plugins.android.application)
 }
 
 android {
+    sourceSets["main"].jniLibs.srcDirs("src/main/jniLibs")
+
     namespace = "com.projeto.totem"
     compileSdk = 35
 
