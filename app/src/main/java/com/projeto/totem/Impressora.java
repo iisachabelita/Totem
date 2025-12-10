@@ -229,42 +229,49 @@ public class Impressora implements Printer.Listener {
     }
 
     public void imprimirComprovanteTransacao() throws PrinterException{
-        String comprovante = clisitef.CAMPO_COMPROVANTE_CLIENTE;
-        if(comprovante != null){
-            comprovante = comprovante.trim();
+        String[] comprovantes = {
+            clisitef.CAMPO_COMPROVANTE_CLIENTE,
+            (clisitef.management ? clisitef.CAMPO_COMPROVANTE_ESTAB : null)
+        };
 
-            if(!comprovante.isEmpty()){
-                String[] linhas = comprovante.split("\\r?\\n");
+        for(int i = 0; i < comprovantes.length; i++){
+            String comprovante = comprovantes[i];
 
-                for(String linha : linhas){
-                    linha = linha.stripTrailing();
+            if(comprovante != null){
+                comprovante = comprovante.trim();
 
-                    if(linha.length() > maxChars){
-                        if(linha.contains("  ")){
-                            int excesso = linha.length() - maxChars;
+                if(!comprovante.isEmpty()){
+                    String[] linhas = comprovante.split("\\r?\\n");
 
-                            while(excesso > 0 && linha.contains("  ")){
-                                linha = linha.replaceFirst("  ", " ");
-                                excesso = linha.length() - maxChars;
+                    for(String linha : linhas){
+                        linha = linha.stripTrailing();
+
+                        if(linha.length() > maxChars){
+                            if(linha.contains("  ")){
+                                int excesso = linha.length() - maxChars;
+
+                                while(excesso > 0 && linha.contains("  ")){
+                                    linha = linha.replaceFirst("  ", " ");
+                                    excesso = linha.length() - maxChars;
+                                }
                             }
                         }
+
+                        if(linha.length() > maxChars){
+                            int start = 0;
+                            while(start < linha.length()){
+                                int end = Math.min(start + maxChars, linha.length());
+                                printFormat(linha.substring(start, end), LEFT, false);
+                                start = end;
+                            }
+                        } else{ printFormat(linha, CENTER, false); }
                     }
 
-                    if(linha.length() > maxChars){
-                        int start = 0;
-                        while(start < linha.length()){
-                            int end = Math.min(start + maxChars, linha.length());
-                            printFormat(linha.substring(start, end), LEFT, false);
-                            start = end;
-                        }
-                    } else{ printFormat(linha, CENTER, false); }
+                    printer.scrollPaper(1);
+                    printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
                 }
-
-                printer.scrollPaper(1);
             }
         }
-
-        printer.cutPaper(CutType.PAPER_PARTIAL_CUT);
     }
 
     private void printFormat(String s, Alignment alignment, Boolean bold) throws PrinterException{

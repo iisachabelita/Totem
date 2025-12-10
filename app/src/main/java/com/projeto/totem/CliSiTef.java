@@ -45,7 +45,7 @@ public class CliSiTef implements ICliSiTefListener{
     public String CAMPO_COMPROVANTE_CLIENTE = null;
     public String CAMPO_COMPROVANTE_ESTAB = null;
 
-    Boolean management = false;
+    public Boolean management = false;
     Boolean pendingOrder = false;
 
     public CliSiTef(Context context){
