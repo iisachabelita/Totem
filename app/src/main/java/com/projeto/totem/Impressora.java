@@ -43,8 +43,6 @@ public class Impressora implements Printer.Listener {
         this.printerUtils = printer.getPrinterUtils();
 
         printer.setPrinterOrientation(OrientationType.DEFAULT);
-
-        loadConfig();
     }
 
     private String image;
@@ -97,6 +95,8 @@ public class Impressora implements Printer.Listener {
 
         prefs.edit().putInt("lineSpacing", parameters.optInt("lineSpacing",0)).apply();
         prefs.edit().putInt("maxChars", parameters.optInt("maxChars",32)).apply();
+
+        loadConfig();
     }
 
     public void imprimirComprovante(JSONArray items, JSONObject parameters) throws PrinterException, JSONException {
