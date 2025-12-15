@@ -277,6 +277,8 @@ public class CliSiTef implements ICliSiTefListener{
                 try {
                     jsonResponse.put("status", "pendingOrder");
                     jsonResponse.put("value", prefs.getString("docFiscal", ""));
+                    jsonResponse.put("customerReceipt", CAMPO_COMPROVANTE_CLIENTE);
+                    jsonResponse.put("merchantReceipt", CAMPO_COMPROVANTE_ESTAB);
                 } catch(JSONException e){ e.printStackTrace(); }
                 MainActivity.sendToJS(jsonResponse);
                 pendingOrder = false;
@@ -284,6 +286,8 @@ public class CliSiTef implements ICliSiTefListener{
                 // Confirmação
                 try {
                     jsonResponse.put("status", "success");
+                    jsonResponse.put("customerReceipt", CAMPO_COMPROVANTE_CLIENTE);
+                    jsonResponse.put("merchantReceipt", CAMPO_COMPROVANTE_ESTAB);
                 } catch(JSONException e){ e.printStackTrace(); }
                 MainActivity.sendToJS(jsonResponse);
             }
