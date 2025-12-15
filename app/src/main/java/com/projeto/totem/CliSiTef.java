@@ -27,6 +27,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.text.SimpleDateFormat;
@@ -83,7 +85,7 @@ public class CliSiTef implements ICliSiTefListener{
 
                     pendingOrder = true;
                 }
-            } catch(Exception e){ throw new RuntimeException(e); }
+            } catch(Exception e){ Log.e("CliSiTef", "Erro: " + e.getMessage(), e); }
 
             clisitef.submitPendingMessages();
 
@@ -100,7 +102,9 @@ public class CliSiTef implements ICliSiTefListener{
                 clisitef.pinpad.setDisplayMessage(mensagem);
             }
             firstTransaction = false;
-        } catch (Exception e){ throw new RuntimeException(e); }
+        } catch (Exception e){
+            Log.e("CliSiTef", "Erro: " + e.getMessage(), e);
+        }
     }
 
 
@@ -128,7 +132,7 @@ public class CliSiTef implements ICliSiTefListener{
         CAMPO_COMPROVANTE_CLIENTE = "";
         CAMPO_COMPROVANTE_ESTAB = "";
 
-        int status = clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
+        clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
     }
 
     @Override
@@ -159,6 +163,7 @@ public class CliSiTef implements ICliSiTefListener{
                         CAMPO_COMPROVANTE_ESTAB = clisitef.getBuffer();
                         jsonResponse.put("command", "merchantReceipt");
                         jsonResponse.put("merchantReceipt", CAMPO_COMPROVANTE_ESTAB);
+                        MainActivity.sendToJS(jsonResponse);
                     }
 
                     clisitef.continueTransaction("");
