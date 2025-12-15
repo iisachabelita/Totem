@@ -153,8 +153,17 @@ public class CliSiTef implements ICliSiTefListener{
                         MainActivity.sendToJS(jsonResponse);
                     }
 
-                    if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor()) CAMPO_COMPROVANTE_CLIENTE = clisitef.getBuffer();
-                    if(fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor()) CAMPO_COMPROVANTE_ESTAB = clisitef.getBuffer();
+                    if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor()){
+                        CAMPO_COMPROVANTE_CLIENTE = clisitef.getBuffer();
+                        jsonResponse.put("command", "customerReceipt");
+                        jsonResponse.put("customerReceipt", CAMPO_COMPROVANTE_CLIENTE);
+                    }
+
+                    if(fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor()){
+                        CAMPO_COMPROVANTE_ESTAB = clisitef.getBuffer();
+                        jsonResponse.put("command", "merchantReceipt");
+                        jsonResponse.put("merchantReceipt", CAMPO_COMPROVANTE_ESTAB);
+                    }
 
                     clisitef.continueTransaction("");
                     break;
@@ -277,8 +286,6 @@ public class CliSiTef implements ICliSiTefListener{
                 try {
                     jsonResponse.put("status", "pendingOrder");
                     jsonResponse.put("value", prefs.getString("docFiscal", ""));
-                    jsonResponse.put("customerReceipt", CAMPO_COMPROVANTE_CLIENTE);
-                    jsonResponse.put("merchantReceipt", CAMPO_COMPROVANTE_ESTAB);
                 } catch(JSONException e){ e.printStackTrace(); }
                 MainActivity.sendToJS(jsonResponse);
                 pendingOrder = false;
@@ -286,8 +293,6 @@ public class CliSiTef implements ICliSiTefListener{
                 // Confirmação
                 try {
                     jsonResponse.put("status", "success");
-                    jsonResponse.put("customerReceipt", CAMPO_COMPROVANTE_CLIENTE);
-                    jsonResponse.put("merchantReceipt", CAMPO_COMPROVANTE_ESTAB);
                 } catch(JSONException e){ e.printStackTrace(); }
                 MainActivity.sendToJS(jsonResponse);
             }
