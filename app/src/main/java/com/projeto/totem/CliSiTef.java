@@ -153,11 +153,7 @@ public class CliSiTef implements ICliSiTefListener{
                         MainActivity.sendToJS(jsonResponse);
                     }
 
-                    if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor()){
-                        CAMPO_COMPROVANTE_CLIENTE = clisitef.getBuffer();
-                        jsonResponse.put("command", "customerReceipt");
-                        jsonResponse.put("customerReceipt", CAMPO_COMPROVANTE_CLIENTE);
-                    }
+                    if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor()) CAMPO_COMPROVANTE_CLIENTE = clisitef.getBuffer();
 
                     if(fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor()){
                         CAMPO_COMPROVANTE_ESTAB = clisitef.getBuffer();
