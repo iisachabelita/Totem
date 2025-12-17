@@ -85,7 +85,9 @@ public class CliSiTef implements ICliSiTefListener{
 
                     pendingOrder = true;
                 }
-            } catch(Exception e){ Log.e("CliSiTef", "Erro: " + e.getMessage(), e); }
+            } catch (Exception e) {
+                Log.e("CliSiTef", "Erro: " + e.getMessage(), e);
+            }
 
             clisitef.submitPendingMessages();
 
@@ -102,7 +104,7 @@ public class CliSiTef implements ICliSiTefListener{
                 clisitef.pinpad.setDisplayMessage(mensagem);
             }
             firstTransaction = false;
-        } catch (Exception e){
+        } catch (Exception e) {
             Log.e("CliSiTef", "Erro: " + e.getMessage(), e);
         }
     }
@@ -254,7 +256,9 @@ public class CliSiTef implements ICliSiTefListener{
                     clisitef.continueTransaction("");
                     break;
             }
-        } catch (JSONException e) { e.printStackTrace(); }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
         if(new String(input).equals("13 - Operação Cancelada")){
             clisitef.abortTransaction(-1);
@@ -265,7 +269,9 @@ public class CliSiTef implements ICliSiTefListener{
     public void onTransactionResult(int stage,int resultCode){
         JSONObject jsonResponse = new JSONObject();
         try { jsonResponse.put("command", "onTransactionResult");
-        } catch(JSONException e){ e.printStackTrace(); }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
         if(stage == 1 && resultCode == 0){
             if(management){
@@ -273,13 +279,17 @@ public class CliSiTef implements ICliSiTefListener{
                 try {
                     MainActivity.impressora.imprimirComprovanteTransacao();
                     clisitef.finishTransaction(1);
-                } catch(Exception e){ e.printStackTrace(); }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             } else{
                 try {
                     // Impressão
                     jsonResponse.put("status", "print");
                     MainActivity.sendToJS(jsonResponse);
-                } catch(Exception e){ e.printStackTrace(); }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         } else if(stage == 2 && resultCode == 0){
             if(pendingOrder){
@@ -287,14 +297,18 @@ public class CliSiTef implements ICliSiTefListener{
                 try {
                     jsonResponse.put("status", "pendingOrder");
                     jsonResponse.put("value", prefs.getString("docFiscal", ""));
-                } catch(JSONException e){ e.printStackTrace(); }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
                 MainActivity.sendToJS(jsonResponse);
                 pendingOrder = false;
             } else if(!management){
                 // Confirmação
                 try {
                     jsonResponse.put("status", "success");
-                } catch(JSONException e){ e.printStackTrace(); }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
                 MainActivity.sendToJS(jsonResponse);
             }
 
@@ -330,7 +344,9 @@ public class CliSiTef implements ICliSiTefListener{
                 try {
                     jsonResponse.put("status", "error");
                     jsonResponse.put("value", erro);
-                } catch(JSONException e){ e.printStackTrace(); }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
                 MainActivity.sendToJS(jsonResponse);
                 if(firstTransaction){ configurarPinpad(); }
             }
