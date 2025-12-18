@@ -131,8 +131,8 @@ public class CliSiTef implements ICliSiTefListener{
 
         retryMap.clear();
         management = modalidade == 110 ? true : false;
-        CAMPO_COMPROVANTE_CLIENTE = "";
-        CAMPO_COMPROVANTE_ESTAB = "";
+        CAMPO_COMPROVANTE_CLIENTE = null;
+        CAMPO_COMPROVANTE_ESTAB = null;
 
         clisitef.startTransaction(this, modalidade, valor, docFiscal, dataFiscal, horaFiscal, operador, restricoes);
     }
@@ -156,7 +156,7 @@ public class CliSiTef implements ICliSiTefListener{
                     if(fieldId == Transaction.CAMPO_NSU.getValor()){
                         jsonResponse.put("command", "nsu");
                         jsonResponse.put("nsu",clisitef.getBuffer());
-                        MainActivity.sendToJS(jsonResponse);
+                        MainActivity.postMessage(jsonResponse);
                     }
 
                     if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor()) CAMPO_COMPROVANTE_CLIENTE = clisitef.getBuffer();
@@ -165,7 +165,7 @@ public class CliSiTef implements ICliSiTefListener{
                         CAMPO_COMPROVANTE_ESTAB = clisitef.getBuffer();
                         jsonResponse.put("command", "merchantReceipt");
                         jsonResponse.put("merchantReceipt", CAMPO_COMPROVANTE_ESTAB);
-                        MainActivity.sendToJS(jsonResponse);
+                        MainActivity.postMessage(jsonResponse);
                     }
 
                     clisitef.continueTransaction("");
@@ -178,14 +178,14 @@ public class CliSiTef implements ICliSiTefListener{
                 case CMD_MESSAGE_QRCODE: // 52
                     jsonResponse.put("command", bridge);
                     jsonResponse.put("message",clisitef.getBuffer());
-                    MainActivity.sendToJS(jsonResponse);
+                    MainActivity.postMessage(jsonResponse);
                     clisitef.continueTransaction("");
                     break;
 
                 case CMD_SHOW_MENU_TITLE: // 4
                     jsonResponse.put("command", bridge);
                     jsonResponse.put("title",clisitef.getBuffer());
-                    MainActivity.sendToJS(jsonResponse);
+                    MainActivity.postMessage(jsonResponse);
                     clisitef.continueTransaction("");
                     break;
 
@@ -201,7 +201,7 @@ public class CliSiTef implements ICliSiTefListener{
 
                     jsonResponse.put("command", bridge);
                     jsonResponse.put("message",clisitef.getBuffer());
-                    MainActivity.sendToJS(jsonResponse);
+                    MainActivity.postMessage(jsonResponse);
                     break;
 
                 case CMD_CLEAR_MSG_CASHIER: // 11
@@ -209,14 +209,14 @@ public class CliSiTef implements ICliSiTefListener{
                 case CMD_CLEAR_MSG_CASHIER_CUSTOMER: // 13
                     jsonResponse.put("command", bridge);
                     jsonResponse.put("message","");
-                    MainActivity.sendToJS(jsonResponse);
+                    MainActivity.postMessage(jsonResponse);
                     clisitef.continueTransaction("");
                     break;
 
                 case CMD_CLEAR_MENU_TITLE: // 14
                     jsonResponse.put("command", bridge);
                     jsonResponse.put("title","");
-                    MainActivity.sendToJS(jsonResponse);
+                    MainActivity.postMessage(jsonResponse);
                     clisitef.continueTransaction("");
                     break;
 
@@ -234,7 +234,7 @@ public class CliSiTef implements ICliSiTefListener{
                         if(!management){
                             jsonResponse.put("command", bridge);
                             jsonResponse.put("message", inputMsg);
-                            MainActivity.sendToJS(jsonResponse);
+                            MainActivity.postMessage(jsonResponse);
                         }
                     } else{
                         confirm = "1"; // Cancela
@@ -246,7 +246,7 @@ public class CliSiTef implements ICliSiTefListener{
                 case CMD_GET_MENU_OPTION: // 21
                     jsonResponse.put("command", bridge);
                     jsonResponse.put("message", clisitef.getBuffer());
-                    MainActivity.sendToJS(jsonResponse);
+                    MainActivity.postMessage(jsonResponse);
                     break;
 
                 case CMD_ABORT_REQUEST: // 23 - esperando ação do usuário
@@ -286,7 +286,7 @@ public class CliSiTef implements ICliSiTefListener{
                 try {
                     // Impressão
                     jsonResponse.put("status", "print");
-                    MainActivity.sendToJS(jsonResponse);
+                    MainActivity.postMessage(jsonResponse);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -300,7 +300,7 @@ public class CliSiTef implements ICliSiTefListener{
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                MainActivity.sendToJS(jsonResponse);
+                MainActivity.postMessage(jsonResponse);
                 pendingOrder = false;
             } else if(!management){
                 // Confirmação
@@ -309,7 +309,7 @@ public class CliSiTef implements ICliSiTefListener{
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                MainActivity.sendToJS(jsonResponse);
+                MainActivity.postMessage(jsonResponse);
             }
 
             if(firstTransaction){ configurarPinpad(); }
@@ -347,7 +347,7 @@ public class CliSiTef implements ICliSiTefListener{
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                MainActivity.sendToJS(jsonResponse);
+                MainActivity.postMessage(jsonResponse);
                 if(firstTransaction){ configurarPinpad(); }
             }
         }

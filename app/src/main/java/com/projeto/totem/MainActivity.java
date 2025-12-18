@@ -87,7 +87,7 @@ public class MainActivity extends Activity {
                             JSONObject dataJson = (JSONObject) dataObj;
 
                             String command = dataJson.optString("command");
-                            JSONObject payload = dataJson.optJSONObject("payload"); // Pode ser String, JSONObject ou JSONArray
+                            JSONObject payload = dataJson.optJSONObject("payload");
 
                             handleBridgeMessage(command, payload);
                         }
@@ -154,12 +154,14 @@ public class MainActivity extends Activity {
         }
     }
 
-    public static void sendToJS(JSONObject json){
+    public static void postMessage(JSONObject json){
         try {
-            String js = "window.postMessage(" + json + ", '*');";
-            geckoSession.loadUri("javascript:" + js);
+            if(mPort != null){
+                json.put("action", "postMessage");
+                mPort.postMessage(json);
+            }
         } catch (Exception e) {
-            Log.e("Bridge", "sendToJS: ", e);
+            Log.e("Bridge", "postMessage error", e);
         }
     }
 }

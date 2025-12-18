@@ -33,4 +33,8 @@ browser.runtime.onMessage.addListener((request) => {
             return Promise.resolve({ action: "evalJavascript", data: e.toString(), id: request.id });
         }
     }
+
+    if(request.action === 'postMessage'){
+         window.postMessage(request, "*");
+    }
 });
