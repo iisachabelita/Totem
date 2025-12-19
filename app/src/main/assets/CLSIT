@@ -6,6 +6,3 @@ TraceRotativo=50
 [CliSiTefI]
 DiretorioTrace=./files
 HabilitaTrace=1
-
-[SiTef]
-ConexaoObrigatoria=1
