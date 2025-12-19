@@ -55,12 +55,11 @@ public class CliSiTef implements ICliSiTefListener{
         this.clisitef = new br.com.softwareexpress.sitef.android.CliSiTef(this.context);
     }
     public void configurarCliSiTef(JSONObject parameters) throws Exception {
-        String IPSiTef = parameters.optString("IPSiTef");
         String IdLoja = parameters.optString("IdLoja");
         String IdTerminal = parameters.optString("IdTerminal");
         String ParametrosAdicionais = parameters.optString("ParametrosAdicionais");
 
-        int config = clisitef.configure(IPSiTef,IdLoja,IdTerminal,ParametrosAdicionais);
+        int config = clisitef.configure("tls-prod.fiservapp.com",IdLoja,IdTerminal,ParametrosAdicionais);
 
         if(config == 0){
             // Verificando se há transações pendentes
