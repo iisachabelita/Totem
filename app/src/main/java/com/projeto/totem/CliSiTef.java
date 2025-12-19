@@ -152,12 +152,6 @@ public class CliSiTef implements ICliSiTefListener{
         try {
             switch(command){
                 case CMD_RESULT_DATA: // 0
-                    if(fieldId == Transaction.CAMPO_NSU.getValor()){
-                        jsonResponse.put("command", "nsu");
-                        jsonResponse.put("nsu",clisitef.getBuffer());
-                        MainActivity.postMessage(jsonResponse);
-                    }
-
                     if(fieldId == Transaction.CAMPO_COMPROVANTE_CLIENTE.getValor()) CAMPO_COMPROVANTE_CLIENTE = clisitef.getBuffer();
 
                     if(fieldId == Transaction.CAMPO_COMPROVANTE_ESTAB.getValor()){
