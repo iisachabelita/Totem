@@ -244,7 +244,7 @@ public class Impressora implements Printer.Listener {
                     String[] linhas = comprovante.split("\\r?\\n");
 
                     for(String linha : linhas){
-                        linha = linha.stripTrailing();
+                        linha = linha.trim();
 
                         if(linha.length() > maxChars){
                             if(linha.contains("  ")){
