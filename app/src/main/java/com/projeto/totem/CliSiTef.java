@@ -1,6 +1,7 @@
 package com.projeto.totem;
 
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_ABORT_REQUEST;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_HEADER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MENU_TITLE;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CASHIER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CASHIER_CUSTOMER;
@@ -8,11 +9,19 @@ import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CLEAR_MSG_CUSTOM
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CONFIRMATION;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_CONFIRM_GO_BACK;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_BARCODE;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_CHEQUE;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_CURRENCY;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_INTERNAL;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_PASSWORD;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_FIELD_TRACK;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_MASKED_FIELD;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_MENU_OPTION;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_GET_PINPAD_CONFIRMATION;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_MESSAGE_QRCODE;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_PRESS_ANY_KEY;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_REMOVE_QRCODE_FIELD;
+import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_HEADER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MENU_TITLE;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER;
 import static br.com.softwareexpress.sitef.android.CliSiTef.CMD_SHOW_MSG_CASHIER_CUSTOMER;
@@ -175,6 +184,7 @@ public class CliSiTef implements ICliSiTefListener{
                     clisitef.continueTransaction("");
                     break;
 
+                case CMD_SHOW_HEADER: // 15
                 case CMD_SHOW_MENU_TITLE: // 4
                     jsonResponse.put("command", bridge);
                     jsonResponse.put("title",clisitef.getBuffer());
@@ -185,8 +195,7 @@ public class CliSiTef implements ICliSiTefListener{
                 case CMD_GET_FIELD: // 30
                 case CMD_GET_FIELD_CURRENCY: // 34
                     // if(!management){
-                        // Crédito parcelado
-                        // clisitef.continueTransaction("2");
+                        // clisitef.continueTransaction("2"); // Crédito parcelado em 2
                         // break;
                     // }
 
@@ -206,6 +215,7 @@ public class CliSiTef implements ICliSiTefListener{
                     clisitef.continueTransaction("");
                     break;
 
+                case CMD_CLEAR_HEADER: // 16
                 case CMD_CLEAR_MENU_TITLE: // 14
                     jsonResponse.put("command", bridge);
                     jsonResponse.put("title","");
@@ -242,6 +252,13 @@ public class CliSiTef implements ICliSiTefListener{
                     MainActivity.postMessage(jsonResponse);
                     break;
 
+                case CMD_GET_FIELD_INTERNAL: // 29
+                case CMD_GET_FIELD_TRACK: // 32
+                case CMD_GET_PINPAD_CONFIRMATION: // 37
+                case CMD_GET_FIELD_CHEQUE: // 31
+                case CMD_GET_FIELD_BARCODE: // 35
+                case CMD_GET_FIELD_PASSWORD: // 33
+                case CMD_GET_MASKED_FIELD: // 41
                 case CMD_ABORT_REQUEST: // 23 - esperando ação do usuário
                 case CMD_SHOW_QRCODE_FIELD: // 50
                 case CMD_REMOVE_QRCODE_FIELD: // 51
