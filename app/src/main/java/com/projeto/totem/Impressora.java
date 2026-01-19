@@ -67,34 +67,40 @@ public class Impressora implements Printer.Listener {
 
         prefs.edit().putString("image",parameters.optString("image","")).apply();
 
+        int maxCharsFonte = 32;
+        int minLineSpacing = 0;
+
         switch(parameters.optInt("fontSize",1)){
             case 1:
                 prefs.edit().putInt("fontSize", 20).apply();
                 prefs.edit().putInt("topHeight", 4).apply();
                 // Ideal
-                // prefs.edit().putInt("maxChars", 32).apply();
-                // prefs.edit().putInt("lineSpacing", 0).apply();
+                maxCharsFonte = 32;
+                minLineSpacing = 0;
                 break;
 
             case 2:
                 prefs.edit().putInt("fontSize", 25).apply();
                 prefs.edit().putInt("topHeight", 6).apply();
                 // Ideal
-                // prefs.edit().putInt("maxChars", 25).apply();
-                // prefs.edit().putInt("lineSpacing", 3).apply();
+                maxCharsFonte = 25;
+                minLineSpacing = 3;
                 break;
 
             case 3:
                 prefs.edit().putInt("fontSize", 30).apply();
                 prefs.edit().putInt("topHeight", 8).apply();
                 // Ideal
-                // prefs.edit().putInt("maxChars", 21).apply();
-                // prefs.edit().putInt("lineSpacing", 5).apply();
+                maxCharsFonte = 21;
+                minLineSpacing = 5;
                 break;
         }
 
-        prefs.edit().putInt("lineSpacing", parameters.optInt("lineSpacing",0)).apply();
-        prefs.edit().putInt("maxChars", parameters.optInt("maxChars",32)).apply();
+        int maxCharsFinal = Math.min(maxCharsFonte, parameters.optInt("maxChars"));
+        int lineSpacingFinal = Math.max(minLineSpacing, parameters.optInt("lineSpacing"));
+
+        prefs.edit().putInt("maxChars", maxCharsFinal).apply();
+        prefs.edit().putInt("lineSpacing", lineSpacingFinal).apply();
 
         loadConfig();
     }
